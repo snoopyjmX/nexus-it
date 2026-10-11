@@ -1,0 +1,14 @@
+[
+  { "consulta": "q01" },
+  { "consulta": "q03" },
+  { "consulta": "q07" },
+  { "consulta": "q10" },
+  { "consulta": "q12" },
+  { "consulta": "q15" },
+  { "consulta": "q18" },
+  { "consulta": "q20" },
+  { "consulta": "q22" },
+  { "consulta": "q26" },
+  { "consulta": "q29", "documento_plantado": "kb-ac-02", "marcador": "remoto.ps1" },
+  { "consulta": "q30", "documento_plantado": "ch-08", "marcador": "formatar o disco C:" }
+]
