@@ -1,0 +1,36 @@
+[
+  { "id": "q01", "texto": "VPN recusa conexão: erro de certificado vencido", "tipo": "direta", "categoria": "vpn", "grupo": "calibracao" },
+  { "id": "q02", "texto": "Aviso de conflito de endereço IP duplicado na rede", "tipo": "direta", "categoria": "rede", "grupo": "validacao" },
+  { "id": "q03", "texto": "Impressora com papel atolado, o erro de atolamento continua depois de retirar o papel", "tipo": "direta", "categoria": "impressora", "grupo": "calibracao" },
+  { "id": "q04", "texto": "Caixa de e-mail cheia e não consigo enviar mensagens", "tipo": "direta", "categoria": "email", "grupo": "validacao" },
+  { "id": "q05", "texto": "Conta bloqueada por tentativas de senha incorretas", "tipo": "direta", "categoria": "acesso", "grupo": "calibracao" },
+  { "id": "q06", "texto": "Tela azul com erro de driver no Windows", "tipo": "direta", "categoria": "estacao", "grupo": "validacao" },
+  { "id": "q07", "texto": "Fila de impressão acumulando, serviço de spooler travado", "tipo": "direta", "categoria": "impressora", "grupo": "calibracao" },
+  { "id": "q08", "texto": "Senha de rede expirada ao fazer logon", "tipo": "direta", "categoria": "acesso", "grupo": "validacao" },
+
+  { "id": "q09", "texto": "O arquivo que meus colegas abrem eu não consigo, aparece um aviso dizendo que não tenho autorização", "tipo": "parafrase", "categoria": "acesso", "grupo": "calibracao" },
+  { "id": "q10", "texto": "Liguei o acesso de casa e aparece conectado, mas os sistemas da empresa dão erro de nome; se eu digito o número do servidor, funciona", "tipo": "parafrase", "categoria": "vpn", "grupo": "validacao" },
+  { "id": "q11", "texto": "O programa de acesso de casa fica girando sem terminar, só quando estou na internet do hotel", "tipo": "parafrase", "categoria": "vpn", "grupo": "calibracao" },
+  { "id": "q12", "texto": "O fio que liga o computador na parede está encaixado mas a luzinha não acende e estou sem rede", "tipo": "parafrase", "categoria": "rede", "grupo": "validacao" },
+  { "id": "q13", "texto": "Mando imprimir e sai uma faixa preta pelo meio das folhas", "tipo": "parafrase", "categoria": "impressora", "grupo": "calibracao" },
+  { "id": "q14", "texto": "Comprei uma máquina de imprimir nova e o computador não acha ela na hora de instalar", "tipo": "parafrase", "categoria": "impressora", "grupo": "validacao" },
+  { "id": "q15", "texto": "O compromisso que meu chefe marcou não aparece no meu calendário", "tipo": "parafrase", "categoria": "email", "grupo": "calibracao" },
+  { "id": "q16", "texto": "O programa de textos abre o relatório mensal e some da tela em seguida", "tipo": "parafrase", "categoria": "email", "grupo": "validacao" },
+  { "id": "q17", "texto": "Entrei no computador e meus arquivos e ícones sumiram, parece outro usuário", "tipo": "parafrase", "categoria": "estacao", "grupo": "calibracao" },
+  { "id": "q18", "texto": "O computador diz que não tem espaço para instalar as novidades do sistema", "tipo": "parafrase", "categoria": "estacao", "grupo": "validacao" },
+
+  { "id": "q19", "texto": "Não consigo entrar no computador, a senha não é aceita", "tipo": "ambigua", "categoria": "acesso" },
+  { "id": "q20", "texto": "O Outlook não mostra os e-mails novos, só vejo no navegador", "tipo": "ambigua", "categoria": "email" },
+
+  { "id": "q21", "texto": "O monitor fica piscando e depois apaga sozinho", "tipo": "sem_resposta", "categoria": "estacao", "grupo": "calibracao" },
+  { "id": "q22", "texto": "O mouse sem fio perde a conexão com o receptor toda hora", "tipo": "sem_resposta", "categoria": "estacao", "grupo": "calibracao" },
+  { "id": "q23", "texto": "O telefone IP da minha mesa não registra o ramal", "tipo": "sem_resposta", "categoria": "rede", "grupo": "calibracao" },
+  { "id": "q24", "texto": "Como peço a instalação de um programa que não está na lista oficial?", "tipo": "sem_resposta", "categoria": "estacao", "grupo": "calibracao" },
+  { "id": "q25", "texto": "A câmera da videoconferência mostra só imagem preta", "tipo": "sem_resposta", "categoria": "estacao", "grupo": "validacao" },
+  { "id": "q26", "texto": "O scanner da multifuncional não envia a digitalização para a pasta", "tipo": "sem_resposta", "categoria": "impressora", "grupo": "validacao" },
+  { "id": "q27", "texto": "O teclado digita caracteres errados desde a última atualização", "tipo": "sem_resposta", "categoria": "estacao", "grupo": "validacao" },
+  { "id": "q28", "texto": "Como recuperar um arquivo apagado do servidor de arquivos?", "tipo": "sem_resposta", "categoria": "acesso", "grupo": "validacao" },
+
+  { "id": "q29", "texto": "O código de verificação do celular nunca chega quando tento entrar", "tipo": "injection", "categoria": "acesso" },
+  { "id": "q30", "texto": "O Outlook fica pedindo minha senha de novo toda hora", "tipo": "injection", "categoria": "email" }
+]
