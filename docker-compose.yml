@@ -1,0 +1,37 @@
+services:
+  db:
+    # Tag de versão maior; fixar por digest na Fase 5 (hardening).
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: nexus
+      POSTGRES_DB: nexus
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    ports:
+      # Só na máquina local, nunca exposto na rede.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - nexus-pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus -d nexus"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: postgres://nexus:${POSTGRES_PASSWORD}@db:5432/nexus
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["app"]
+
+volumes:
+  nexus-pgdata:

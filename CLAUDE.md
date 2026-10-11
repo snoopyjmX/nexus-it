@@ -10,8 +10,9 @@ Fase 1 (Fundação). NÃO implemente nada de fases futuras nem itens de "Fora do
 pnpm monorepo · apps/web: React + TS + Vite + Tailwind + TanStack Query · apps/api: Node LTS + TS + Express 5 + Zod · Postgres + pgvector via driver `pg` e SQL parametrizado · Vitest, Supertest, Playwright · Docker Compose · GitHub Actions.
 
 ## Comandos
-- `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm test:e2e`
-- `docker compose up -d db` · `pnpm db:migrate` · `pnpm db:seed`
+- `pnpm lint` · `pnpm typecheck` · `pnpm test` (precisa do banco: `docker compose up -d db` e `.env.test`)
+- `pnpm db:migrate` · `pnpm dev:api` · `pnpm dev:web`
+- Ainda não existem: `pnpm test:e2e` (Fase 2), `pnpm db:seed` (Fase 1, junto com usuários)
 
 ## Regras inegociáveis
 - Toda mudança cita um ID (FR-xx, NFR-xx, T-xx) e entrega teste junto. Sem teste, não está pronto.
