@@ -1,5 +1,8 @@
 import pg from "pg";
-import type { Database } from "../app.js";
+
+export interface Database {
+  ping(): Promise<void>;
+}
 
 export function createPool(connectionString: string): pg.Pool {
   return new pg.Pool({ connectionString, max: 10, connectionTimeoutMillis: 5_000 });

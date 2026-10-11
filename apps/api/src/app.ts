@@ -1,11 +1,8 @@
 import { randomUUID } from "node:crypto";
 import express, { type RequestHandler } from "express";
 import type { Logger } from "pino";
+import type { Database } from "./lib/db.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
-
-export interface Database {
-  ping(): Promise<void>;
-}
 
 interface AppDeps {
   db: Database;
@@ -19,6 +16,9 @@ const securityHeaders: RequestHandler = (_req, res, next) => {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
     "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    // Respostas da API nunca devem ficar em cache (importa a partir da autenticação).
+    "Cache-Control": "no-store",
   });
   next();
 };

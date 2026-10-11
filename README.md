@@ -29,7 +29,13 @@ DATABASE_URL=postgres://nexus:<senha>@127.0.0.1:5432/nexus pnpm dev:api   # http
 pnpm dev:web                    # http://localhost:5173
 ```
 
-Para subir a API em container: `docker compose --profile app up --build`.
+Para subir a API em container:
+
+```bash
+docker compose --profile app build
+docker compose --profile app run --rm api node dist/db/migrate-cli.js
+docker compose --profile app up -d
+```
 
 ## Documentação
 

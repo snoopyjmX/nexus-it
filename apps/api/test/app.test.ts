@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { createLogger } from "../src/lib/logger.js";
 import { Writable } from "node:stream";
+import { capture } from "./helpers.js";
 
 const silent = createLogger("silent", new Writable({ write: (_c, _e, cb) => cb() }));
 const healthyDb = { ping: async () => undefined };
@@ -74,6 +75,7 @@ describe("cabeçalhos de segurança e correlação", () => {
     expect(res.headers["x-content-type-options"]).toBe("nosniff");
     expect(res.headers["referrer-policy"]).toBe("no-referrer");
     expect(res.headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+    expect(res.headers["cache-control"]).toBe("no-store");
   });
 
   it("devolve um x-request-id e reaproveita um id válido recebido", async () => {
@@ -93,4 +95,26 @@ describe("cabeçalhos de segurança e correlação", () => {
       .set("x-request-id", '", "level":60, "msg":"falso');
     expect(res.headers["x-request-id"]).toMatch(/^[0-9a-f-]{36}$/);
   });
+});
+
+describe("log de requisição (NFR-05, NFR-07)", () => {
+  it("registra método, rota, status e duração sem corpo, cookie, authorization ou query", async () => {
+    const sink = capture();
+    const app = createApp({ db: healthyDb, logger: createLogger("info", sink.stream) });
+
+    await request(app)
+      .post("/api/v1/health/live?access_token=segredo-query")
+      .set("cookie", "sid=segredo-cookie")
+      .set("authorization", "Bearer segredo-auth")
+      .send({ description: "segredo-corpo" });
+
+    const output = sink.read();
+    expect(output).toMatch(/"method":"POST"/);
+    expect(output).toMatch(/"route":"\/api\/v1\/health\/live"/);
+    expect(output).toMatch(/"durationMs":\d+/);
+    for (const leaked of ["segredo-query", "segredo-cookie", "segredo-auth", "segredo-corpo"]) {
+      expect(output).not.toContain(leaked);
+    }
+  });
+
 });
