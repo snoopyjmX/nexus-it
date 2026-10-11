@@ -1,0 +1,37 @@
+{
+  "patterns": [
+    {
+      "rule_name": "sql_template_literal",
+      "regex": "\\.query\\(\\s*`[^`]*\\$\\{",
+      "paths": ["**/apps/api/**"],
+      "reminder": "SQL montado com template literal. Use parâmetros ($1, $2) e passe os valores no array."
+    },
+    {
+      "rule_name": "token_in_localstorage",
+      "regex": "localStorage\\.setItem\\([^)]*(token|session|auth)",
+      "reminder": "Token ou sessão em localStorage. A sessão fica em cookie HttpOnly."
+    },
+    {
+      "rule_name": "cors_wildcard",
+      "regex": "origin\\s*:\\s*['\"]\\*['\"]",
+      "reminder": "CORS aberto. Em produção é same-origin; em desenvolvimento use o proxy do Vite."
+    },
+    {
+      "rule_name": "identity_from_body",
+      "regex": "req\\.body\\.(role|requester_id|requesterId|author_id|authorId|status)\\b",
+      "paths": ["**/apps/api/**"],
+      "reminder": "Campo de identidade ou status vindo do corpo. Use a sessão ou o endpoint de transição."
+    },
+    {
+      "rule_name": "console_log_api",
+      "substrings": ["console.log("],
+      "paths": ["**/apps/api/src/**"],
+      "reminder": "Use o logger estruturado com redaction, não console.log."
+    },
+    {
+      "rule_name": "ts_ignore",
+      "substrings": ["@ts-ignore", "@ts-nocheck"],
+      "reminder": "Supressão de checagem de tipo. Corrija o tipo em vez de silenciar."
+    }
+  ]
+}

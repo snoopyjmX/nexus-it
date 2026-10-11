@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.*
+!.env.example
+*.dump
+*.sql.gz
+backups/
+.DS_Store
+.claude/settings.local.json
+.claude/claude-security-guidance.local.md
