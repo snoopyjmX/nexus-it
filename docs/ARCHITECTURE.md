@@ -12,7 +12,7 @@ apps/api               Express 5 + TS + Zod
   src/modules/         auth, tickets, knowledge, search, diagnosis, evaluation
   src/policy/          can(), scopeTicketsFor(), scopeArticlesFor()  ← único lugar de autorização
   src/lib/             db, logger, errors (problem+json), config (Zod no boot)
-packages/contracts     schemas Zod compartilhados (OpenAPI gerado daqui)
+packages/contracts     schemas Zod compartilhados — entra na Fase 2, com o primeiro DTO real
 packages/evaluation    dataset/dev, dataset/test (congelado), métricas, runner CLI
 infra/                 Dockerfiles, compose
 docs/                  PRD, ARCHITECTURE, THREAT_MODEL, AI_EVALUATION, SEMANA0, RUNBOOK, adr/

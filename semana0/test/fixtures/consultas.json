@@ -1,0 +1,6 @@
+[
+  {"id": "f1", "texto": "senha expirada", "tipo": "direta", "categoria": "acesso", "grupo": "calibracao"},
+  {"id": "f2", "texto": "nada sai da impressora", "tipo": "parafrase", "categoria": "impressora", "grupo": "validacao"},
+  {"id": "f3", "texto": "monitor piscando", "tipo": "sem_resposta", "categoria": "estacao", "grupo": "calibracao"},
+  {"id": "f4", "texto": "teclado sem acento", "tipo": "sem_resposta", "categoria": "estacao", "grupo": "validacao"}
+]

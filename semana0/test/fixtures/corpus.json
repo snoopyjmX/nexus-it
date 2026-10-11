@@ -1,0 +1,5 @@
+[
+  {"id": "kb-senha-expirada", "tipo": "artigo", "categoria": "acesso", "titulo": "Senha de rede expirada", "sintoma": "Usuário não consegue entrar na estação; mensagem diz que a senha expirou.", "ambiente": "Windows 11 no domínio fictício EXEMPLO.", "procedimento": "Confirmar identidade, redefinir a senha no painel de diretório e exigir troca no próximo logon.", "resultado": "Usuário entra com a nova senha."},
+  {"id": "kb-vpn-certificado", "tipo": "artigo", "categoria": "vpn", "titulo": "VPN recusa certificado vencido", "sintoma": "Cliente VPN mostra erro de certificado ao conectar.", "ambiente": "Notebook corporativo fictício.", "procedimento": "Verificar validade do certificado no repositório do usuário e reemitir pelo portal interno.", "resultado": "Conexão VPN estabelecida."},
+  {"id": "ch-impressora-fila", "tipo": "chamado", "categoria": "impressora", "titulo": "Impressão parada na fila", "sintoma": "Documentos ficam pendentes e nada imprime.", "ambiente": "Impressora de rede do 2º andar.", "procedimento": "Reiniciar o serviço de spooler e limpar a fila.", "resultado": "Fila volta a imprimir.", "rascunho_llm": true}
+]
