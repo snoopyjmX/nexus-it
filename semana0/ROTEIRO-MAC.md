@@ -4,6 +4,16 @@ Tudo abaixo roda no **Terminal do Mac**, na raiz do repositório, salvo onde ind
 
 Dados e critérios já estão commitados em `semana0/dados/`: `criterios.md`, `titulos.md`, `consultas.json`, `gold.json`, `corpus.json`, `casos-geracao.json` e `AUTORIA.md`. **Não edite nenhum deles antes de medir.**
 
+## Atalho: tudo em um comando
+
+Com o branch `semana0/dados` ativo (passo 0), o Ollama aberto e o OrbStack rodando:
+
+```bash
+semana0/rodar-tudo.sh
+```
+
+Ele faz os passos 1 a 6 abaixo na ordem, com um Postgres descartável em `127.0.0.1:55432` (sem `.env`), escolhe o `--metodo` pela regra do `criterios.md` e roda `qwen3.5:4b` e `gemma3:4b`. Para medir só outro modelo depois (por exemplo o `llama3.2:3b`, se os dois falharem): `semana0/rodar-tudo.sh llama3.2:3b`. Nada é medido duas vezes: para refazer, apague o arquivo em `semana0/resultados/`. Os passos manuais abaixo continuam valendo se preferir rodar cada um.
+
 ## 0. Pegar o código
 
 Se você já fez merge do branch `semana0/dados` no GitHub, basta `git pull` na `main`.
