@@ -1,0 +1,20 @@
+{
+  "name": "@nexus/semana0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "busca": "tsx src/run-retrieval.ts",
+    "geracao": "tsx src/run-generation.ts"
+  },
+  "dependencies": {
+    "pg": "8.23.1",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.15",
+    "vitest": "5.0.3"
+  }
+}

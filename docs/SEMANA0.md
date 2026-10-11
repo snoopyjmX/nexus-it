@@ -5,7 +5,7 @@ Objetivo: responder com dados, em 12–18 h e sem construir o produto:
 2. Existe um limiar de score que separa "tem resposta" de "não tem"?
 3. Algum modelo local cita a fonte certa, resiste a injection e responde num tempo aceitável neste Mac?
 
-Roda num repositório descartável `nexus-semana0`, com scripts Node/TypeScript. Registre as horas em `horas.csv`.
+Roda na pasta `semana0/` deste repositório, com scripts Node/TypeScript (como rodar: [semana0/README.md](../semana0/README.md)). O código do produto não importa nada dela. Registre as horas em `horas.csv`.
 
 ## Passo 1 — Hardware e ambiente (30 min)
 
@@ -17,11 +17,11 @@ ollama --version
 docker version --format '{{.Server.Version}}'
 ```
 
-Salve a saída em `semana0/ambiente.md`. Mac Intel ou 8 GB de RAM → geração ao vivo provavelmente inviável (hipótese; o passo 6 confirma).
+Salve a saída em `semana0/dados/ambiente.md`. Mac Intel ou 8 GB de RAM → geração ao vivo provavelmente inviável (hipótese; o passo 6 confirma).
 
 ## Passo 2 — Critérios antes dos dados (1 h)
 
-Copie a tabela de critérios do fim deste arquivo para `semana0/criterios.md`, ajuste se discordar, e faça commit. Nada é medido antes desse commit.
+Copie a tabela de critérios do fim deste arquivo para `semana0/dados/criterios.md`, ajuste se discordar, e faça commit. Nada é medido antes desse commit.
 
 ## Passo 3 — Consultas antes do corpus (2 h)
 
@@ -57,7 +57,7 @@ Dois modelos de até ~4B parâmetros escolhidos no catálogo do Ollama na data (
 
 ## Passo 7 — Registro e decisão (1 h)
 
-`semana0/resultados/<data>.json`: commit, ambiente, modelo + ID, parâmetros, frio/aquecido, saída bruta por caso. `semana0/decisao.md`: uma linha por critério — passou, não passou ou inconclusivo.
+`semana0/resultados/`: os scripts gravam commit, ambiente, modelo + ID, parâmetros, frio/aquecido e saída bruta por caso. `semana0/dados/decisao.md`: uma linha por critério — passou, não passou ou inconclusivo.
 
 ## Critérios (heurísticos para um conjunto pequeno — não são prova estatística)
 
