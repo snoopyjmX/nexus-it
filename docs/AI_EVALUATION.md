@@ -32,8 +32,9 @@ Versão 2.0 · 2026-10-10. Resultados são preenchidos à medida que são medido
 | Data | Conjunto (hash) | Configuração | Resultado | Saída bruta |
 | --- | --- | --- | --- | --- |
 | 2026-10-12 | dev (`6593b3ab29a9`, 30 consultas) | `pnpm eval`, busca lexical do app (OR dos termos, `ts_rank_cd`), commit `beca538`, Xeon 2,1 GHz / 8 GB (sandbox de desenvolvimento, não o Mac do autor) | Hit@1 · Hit@5 sobre as consultas com resposta: diretas 8/8 · 8/8; paráfrases 7/10 · 8/10; ambíguas 1/2 · 2/2; injection 2/2 · 2/2. Abstenção por score lexical (limiar 1,65 calibrado em 4 sem-resposta): abstém 2/4 na calibração e 2/4 na validação, sem perder respondíveis | `packages/evaluation/results/2026-10-12T03-58-48-dev-lexical.json` |
+| 2026-10-12 | dev (`6593b3ab29a9`), casos de geração `b08ee9fda72a` | `pnpm eval --llm` (3 rodadas), busca lexical, `gemma3:4b` (ID `68ceab7e468a` no `ollama list`), prompt `resumo-v1`, commit `e361c5d` com as edições locais de porta do autor, Intel i7-9750H 2,6 GHz / 16 GB, macOS (Mac do autor) | Cita a fonte esperada: 7 de 8 (critério ≥ 6: atende). Marcador de injection no texto: 0 (atende; o trecho plantado chegou ao modelo em 1 de 2 casos, só esse testa a resistência). Estável nas rodadas: 10 de 12 (atende). **p50 aquecido 26,8 s contra o critério de 20 s: NÃO atende** (p95 38,3 s; 1ª chamada 44,0 s). 36 chamadas, todas `ok`, 0 citações descartadas. Dos 2 sem-resposta, 0 foram recusados antes de chamar o modelo. Critérios b e c do T-05 aguardam leitura humana dos resumos | `packages/evaluation/results/2026-10-12T16-05-06-dev-lexical.json` |
 
-### Notas sobre esta primeira medição
+### Notas sobre a medição da busca (primeira linha)
 - O lexical do app junta os termos com OR; o lexical da Semana 0 usava AND (`plainto_tsquery`) e zerava as paráfrases (0/10). Não comparar os dois sem dizer isso.
 - Só o modo lexical foi medido. O vetorial (bge-m3) depende do Ollama do autor: rodar `EMBEDDINGS_ENABLED=true pnpm eval` e registrar uma linha nova aqui.
 - O conjunto dev foi escrito por IA e aprovado pelo autor (ver `semana0/dados/AUTORIA.md`); com 30 consultas, diferença de 1 ou 2 casos é ruído. O conjunto de teste ainda não existe.
@@ -45,4 +46,4 @@ Precisa do Ollama do autor com o modelo puxado (`LLM_MODEL`, padrão `gemma3:4b`
 2. Registre na tabela de Resultados: data, hash do conjunto, hash dos casos de geração, modelo **e digest** (`ollama list`), versão do prompt, commit, hardware, p50/p95 aquecidos e a saída bruta (`packages/evaluation/results/`).
 3. Critérios automáticos no relatório: cita a fonte esperada (≥ 6 de 8), zero marcadores vazados, p50 aquecido ≤ 20 s, estável (≥ 10 de 12). Se o p50 passar de 20 s, o ADR-008 manda manter o LLM opcional e desligado.
 4. Leia os resumos (tela Laboratório → "Resumos gerados, caso a caso") para os critérios b e c do T-05. Só valem os casos em que o trecho plantado chegou ao modelo.
-5. Ainda não medido: nenhuma linha de geração com modelo real existe nesta tabela.
+5. Primeira medição com modelo real: ver a linha de 2026-10-12 na tabela. O p50 aquecido (26,8 s) passou do critério de 20 s, então, pelo ADR-008, o resumo do modelo segue opcional e desligado (`LLM_ENABLED=false`). A Semana 0 tinha medido 18,4 s com o mesmo modelo no mesmo notebook (`docs/CASE-SEMANA0.md`); a diferença não foi investigada.
