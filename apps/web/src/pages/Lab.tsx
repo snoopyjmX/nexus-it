@@ -5,7 +5,7 @@ import { api } from "../api";
 import { useAuth } from "../auth";
 import { formatDate } from "../labels";
 import { download, exportName, toCsv } from "../lab-export";
-import type { EvalCounts, EvalRun, EvalThreshold } from "../types";
+import type { EvalCounts, EvalGeneration, EvalRun, EvalThreshold } from "../types";
 import { Badge, Button, ErrorMessage, Loading } from "../ui";
 
 const number = (value: number, digits: number) => value.toLocaleString("pt-BR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -48,6 +48,85 @@ function ThresholdLine({ label, value }: { label: string; value: EvalThreshold |
     <li>
       {label} (limiar {number(value.threshold, 2)}): abstém {value.abstainedUnanswerable} de {value.totalUnanswerable} sem resposta; perde {value.lostAnswerable} de {value.totalAnswerable} respondíveis.
     </li>
+  );
+}
+
+const seconds = (ms: number | null) => (ms === null ? "—" : `${number(ms / 1000, 1)} s`);
+const verdict = (met: boolean | null) => (met === null ? "sem dados" : met ? "atende" : "NÃO atende");
+const STATUS: Record<string, string> = { ok: "ok", provider_error: "falha do modelo", invalid_output: "saída inválida", uncited: "sem citação válida", abstained: "abstenção" };
+
+function generationReadable(g: EvalGeneration | undefined): g is EvalGeneration {
+  return Boolean(g && Array.isArray(g.cases) && Array.isArray(g.criteria) && g.summary && g.summary.citedExpected && g.summary.injectionReachedModel);
+}
+
+// Os critérios automáticos não substituem a leitura humana (T-05 b e c): por isso o texto de cada resumo fica à vista,
+// sempre como texto puro.
+function GenerationSection({ g }: { g: EvalGeneration }) {
+  const { summary } = g;
+  return (
+    <section aria-labelledby="lab-geracao">
+      <h3 id="lab-geracao" className="mb-1 font-semibold">Geração (resumo do modelo)</h3>
+      <dl className="mb-2 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1">
+        <dt>Modelo</dt><dd className="font-mono">{g.model}</dd>
+        <dt>Prompt</dt><dd className="font-mono">{g.promptVersion}</dd>
+        <dt>Casos (versão)</dt><dd className="font-mono">{g.casesVersion}</dd>
+        <dt>Repetições</dt><dd>{g.rounds} rodadas</dd>
+        <dt>Primeira chamada (a frio)</dt><dd>{seconds(g.firstCallMs)}</dd>
+        <dt>Mediana (p50) a quente</dt><dd>{seconds(g.warmP50Ms)}</dd>
+        <dt>p95 a quente</dt><dd>{seconds(g.warmP95Ms)}</dd>
+      </dl>
+      <ul className="list-disc space-y-1 pl-5">
+        {g.criteria.map((c) => (
+          <li key={c.name}>
+            {c.name}: {c.value} — {verdict(c.met)} ({c.rule})
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2">
+        Trecho plantado chegou ao modelo em {summary.injectionReachedModel.n} de {summary.injectionReachedModel.of} casos de injeção.
+        {summary.injectionLeaked.length > 0 && ` Vazou em: ${summary.injectionLeaked.join(", ")}.`}
+      </p>
+      <p>
+        {summary.discardedCitations} {summary.discardedCitations === 1 ? "citação descartada" : "citações descartadas"} pelo servidor. Desfechos:{" "}
+        {Object.entries(summary.statusCounts).map(([status, n]) => `${STATUS[status] ?? status} ${n}`).join(", ") || "nenhum"}.
+      </p>
+      <p role="note" className="mt-2 rounded border border-amber-700 bg-amber-50 px-3 py-2 text-amber-900">{g.humanReview}</p>
+      <details className="mt-2">
+        <summary className="cursor-pointer font-semibold">Resumos gerados, caso a caso</summary>
+        <table aria-label="Casos de geração" className="mt-2 w-full border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-slate-400">
+              <th scope="col" className="py-1 pr-3">Caso</th>
+              <th scope="col" className="py-1 pr-3">Tipo</th>
+              <th scope="col" className="py-1 pr-3">Esperadas</th>
+              <th scope="col" className="py-1">Rodadas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {g.cases.map((c) => (
+              <tr key={c.caseId} className="border-b border-slate-200 align-top">
+                <th scope="row" className="py-1 pr-3 font-normal">{c.caseId}</th>
+                <td className="py-1 pr-3">{c.type}</td>
+                <td className="py-1 pr-3 font-mono">{c.expected.join(" ") || "—"}</td>
+                <td className="py-1">
+                  {c.rounds.map((r) => (
+                    <div key={r.round} className="mb-1">
+                      <p>
+                        Rodada {r.round}: {STATUS[r.status] ?? r.status}
+                        {r.durationMs !== null && ` · ${seconds(r.durationMs)}`}
+                        {r.citedCorpusIds.length > 0 && ` · cita ${r.citedCorpusIds.join(" ")}`}
+                        {r.markerLeaked && " · MARCADOR VAZOU"}
+                      </p>
+                      {r.text && <p className="whitespace-pre-wrap">{r.text}</p>}
+                    </div>
+                  ))}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+    </section>
   );
 }
 
@@ -104,6 +183,8 @@ function Detail({ run }: { run: EvalRun }) {
           <ThresholdLine label="Limiar configurado" value={suite.abstention.configured} />
         </ul>
       </section>
+
+      {generationReadable(run.result.generation) && <GenerationSection g={run.result.generation} />}
 
       <details>
         <summary className="cursor-pointer font-semibold">Consultas uma a uma</summary>

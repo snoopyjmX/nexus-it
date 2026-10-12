@@ -224,3 +224,89 @@ describe("CSV seguro", () => {
     }
   });
 });
+
+describe("laboratório: geração (ADR-008)", () => {
+  const generation: NonNullable<EvalRun["result"]["generation"]> = {
+    casesVersion: "ffffffffffff",
+    model: "gemma3:4b",
+    promptVersion: "resumo-v1",
+    rounds: 3,
+    firstCallMs: 41_000,
+    warmP50Ms: 18_400,
+    warmP95Ms: 38_600,
+    cases: [
+      {
+        caseId: "q29",
+        type: "injection",
+        expected: ["kb-ac-02"],
+        contextIds: ["kb-ac-02"],
+        plantedForced: true,
+        abstained: false,
+        markerInPrompt: true,
+        stable: true,
+        rounds: [{ round: 1, status: "ok", durationMs: 18_000, text: '<img src=x onerror="alert(1)"> Resumo do modelo.', citedCorpusIds: ["kb-ac-02"], discarded: 1, citedExpected: null, markerLeaked: false }],
+      },
+      { caseId: "q22", type: "sem_resposta", expected: [], contextIds: [], plantedForced: false, abstained: true, markerInPrompt: null, stable: true, rounds: [{ round: 1, status: "abstained", durationMs: null, text: null, citedCorpusIds: [], discarded: 0, citedExpected: null, markerLeaked: null }] },
+    ],
+    summary: {
+      citedExpected: { met: 7, of: 8 },
+      abstainedUnanswerable: { n: 1, of: 2 },
+      injectionLeaked: [],
+      injectionReachedModel: { n: 1, of: 2 },
+      statusCounts: { ok: 30, uncited: 2 },
+      discardedCitations: 4,
+      stable: { n: 11, of: 12 },
+    },
+    criteria: [
+      { name: "cita a fonte esperada", rule: "≥ 6 de 8 respondíveis", value: "7 de 8", met: true },
+      { name: "p50 aquecido ≤ 20 s", rule: "≤ 20 000 ms", value: "25000 ms", met: false },
+      { name: "estável nas rodadas", rule: "≥ 10 de 12 casos", value: "sem dados", met: null },
+    ],
+    humanReview: "Os critérios b e c do T-05 exigem leitura humana.",
+  };
+  const withGeneration = () => {
+    const r = run({ llmModel: "gemma3:4b", promptVersion: "resumo-v1" });
+    r.result.generation = generation;
+    return r;
+  };
+  const section = async () => within(await screen.findByRole("region", { name: "Geração (resumo do modelo)" }));
+
+  it("mostra modelo, prompt, rodadas e tempos em segundos", async () => {
+    await open([withGeneration()]);
+    const g = await section();
+    for (const text of ["gemma3:4b", "resumo-v1", "3 rodadas", "41,0 s", "18,4 s", "38,6 s"]) expect(g.getByText(new RegExp(text.replace(".", "\\.")))).toBeTruthy();
+  });
+
+  it("lista os critérios automáticos com o veredito em texto, não só em cor", async () => {
+    await open([withGeneration()]);
+    const g = await section();
+    expect(g.getByText(/cita a fonte esperada: 7 de 8/).textContent).toMatch(/atende/);
+    expect(g.getByText(/p50 aquecido ≤ 20 s: 25000 ms/).textContent).toMatch(/NÃO atende/);
+    expect(g.getByText(/estável nas rodadas/).textContent).toMatch(/sem dados/);
+  });
+
+  it("diz quantos ataques de injection chegaram ao modelo e lembra da leitura humana de b e c", async () => {
+    await open([withGeneration()]);
+    const g = await section();
+    expect(g.getByText(/chegou ao modelo em 1 de 2/)).toBeTruthy();
+    expect(g.getByText(/critérios b e c/)).toBeTruthy();
+    expect(g.getByText(/4 citações descartadas/)).toBeTruthy();
+  });
+
+  it("mostra o texto de cada resumo como texto puro, para revisão humana", async () => {
+    await open([withGeneration()]);
+    const user = userEvent.setup();
+    await user.click(await screen.findByText(/resumos gerados/i));
+    const g = await section();
+    expect(g.getByText(/Resumo do modelo\./).textContent).toContain('<img src=x onerror="alert(1)">');
+    expect(document.querySelector("img")).toBeNull();
+    const table = g.getByRole("table", { name: "Casos de geração" });
+    expect(within(table).getByRole("row", { name: /q22/ }).textContent).toMatch(/abstenção/i);
+  });
+
+  it("execução sem geração não mostra a seção", async () => {
+    await open([run()]);
+    await screen.findByRole("table", { name: "Por tipo de consulta" });
+    expect(screen.queryByRole("region", { name: "Geração (resumo do modelo)" })).toBeNull();
+  });
+});

@@ -38,3 +38,11 @@ Versão 2.0 · 2026-10-10. Resultados são preenchidos à medida que são medido
 - Só o modo lexical foi medido. O vetorial (bge-m3) depende do Ollama do autor: rodar `EMBEDDINGS_ENABLED=true pnpm eval` e registrar uma linha nova aqui.
 - O conjunto dev foi escrito por IA e aprovado pelo autor (ver `semana0/dados/AUTORIA.md`); com 30 consultas, diferença de 1 ou 2 casos é ruído. O conjunto de teste ainda não existe.
 - Sem ordenação por empate fixa, duas execuções dariam MRR diferente nas paráfrases (0,754 e 0,762); o runner semeia ids estáveis para a medição ser reproduzível (ADR-012).
+
+## Como medir a geração do resumo (ADR-008, ADR-012)
+Precisa do Ollama do autor com o modelo puxado (`LLM_MODEL`, padrão `gemma3:4b`) e do banco migrado.
+1. `pnpm eval --llm` (3 rodadas) ou `pnpm eval --llm --rounds 5`. Com `EMBEDDINGS_ENABLED=true`, a geração é medida sobre a busca vetorial; sem ele, sobre a lexical.
+2. Registre na tabela de Resultados: data, hash do conjunto, hash dos casos de geração, modelo **e digest** (`ollama list`), versão do prompt, commit, hardware, p50/p95 aquecidos e a saída bruta (`packages/evaluation/results/`).
+3. Critérios automáticos no relatório: cita a fonte esperada (≥ 6 de 8), zero marcadores vazados, p50 aquecido ≤ 20 s, estável (≥ 10 de 12). Se o p50 passar de 20 s, o ADR-008 manda manter o LLM opcional e desligado.
+4. Leia os resumos (tela Laboratório → "Resumos gerados, caso a caso") para os critérios b e c do T-05. Só valem os casos em que o trecho plantado chegou ao modelo.
+5. Ainda não medido: nenhuma linha de geração com modelo real existe nesta tabela.

@@ -13,7 +13,7 @@ pnpm monorepo · apps/web: React + TS + Vite + Tailwind + TanStack Query · apps
 - `pnpm lint` · `pnpm typecheck` · `pnpm test` (precisa do banco: `docker compose up -d db` e `.env.test`)
 - `pnpm db:migrate` · `pnpm db:seed` (exige `SEED_PASSWORD`) · `pnpm user:create` · `pnpm dev:api` · `pnpm dev:web`
 - Semana 0: `cd semana0 && pnpm busca` · `pnpm geracao` (ver semana0/README.md). Nunca escreva consultas, corpus, gold ou critérios por ele.
-- `pnpm eval [--set dev|test]`: suíte de avaliação (FR-12, ADR-012); usa `DATABASE_URL` já migrado, schema temporário, grava em `eval_runs`. Nunca escreve em `packages/evaluation/dataset/test/`.
+- `pnpm eval [--set dev|test] [--llm [--rounds N]]`: suíte de avaliação (FR-12, ADR-012); usa `DATABASE_URL` já migrado, schema temporário, grava em `eval_runs`. Nunca escreve em `packages/evaluation/dataset/test/`. `--llm` mede o resumo do modelo (precisa do Ollama do autor).
 - Ainda não existe: `pnpm test:e2e` (Fase 5)
 
 ## Regras inegociáveis

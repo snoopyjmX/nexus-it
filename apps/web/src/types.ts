@@ -130,6 +130,49 @@ export interface EvalEnvironment {
   memoryGb: number;
 }
 
+export interface EvalGenerationRound {
+  round: number;
+  status: "ok" | "provider_error" | "invalid_output" | "uncited" | "abstained";
+  durationMs: number | null;
+  text: string | null;
+  citedCorpusIds: string[];
+  discarded: number;
+  citedExpected: boolean | null;
+  markerLeaked: boolean | null;
+}
+
+export interface EvalGeneration {
+  casesVersion: string;
+  model: string;
+  promptVersion: string;
+  rounds: number;
+  firstCallMs: number | null;
+  warmP50Ms: number | null;
+  warmP95Ms: number | null;
+  cases: {
+    caseId: string;
+    type: string;
+    expected: string[];
+    contextIds: string[];
+    plantedForced: boolean;
+    abstained: boolean;
+    markerInPrompt: boolean | null;
+    stable: boolean;
+    rounds: EvalGenerationRound[];
+  }[];
+  summary: {
+    citedExpected: { met: number; of: number };
+    abstainedUnanswerable: { n: number; of: number };
+    injectionLeaked: string[];
+    injectionReachedModel: { n: number; of: number };
+    statusCounts: Record<string, number>;
+    discardedCitations: number;
+    stable: { n: number; of: number };
+  };
+  criteria: { name: string; rule: string; value: string; met: boolean | null }[];
+  humanReview: string;
+}
+
 export interface EvalResult {
   schemaVersion: number;
   set: "dev" | "test";
@@ -146,6 +189,7 @@ export interface EvalResult {
     abstention: { calibration: EvalThreshold | null; validation: EvalThreshold | null; configured: EvalThreshold | null };
     rows: EvalQueryRow[];
   };
+  generation?: EvalGeneration;
 }
 
 export interface EvalRun {

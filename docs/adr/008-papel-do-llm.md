@@ -23,3 +23,4 @@ O que o experimento mediu foi uma tarefa específica: o modelo devolvia `suficie
 - Testes de regra de negócio continuam sem LLM real (NFR-04). Casos de injection (T-05, critérios a/b/c) entram na suíte da Fase 4 com mais de 2 casos.
 - Modelo fora do ar: chamados, KB, busca e painel determinístico funcionam, com aviso na interface (FR-13).
 - A opção C ficou descartada. Se for retomada, precisa de ADR novo que diga como o campo `suficiente` do modelo se combina com o limiar e que revise o ADR-002.
+- Checklist da re-medição (ver AI_EVALUATION.md, "Como medir a geração"): `pnpm eval --llm` no Ollama do autor, digest do modelo registrado, p50 aquecido, citações, injeção e leitura humana dos critérios b e c.
