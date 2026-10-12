@@ -66,6 +66,14 @@ describe("runner da avaliação (FR-12)", () => {
     expect(vector?.suite.abstention.configured?.threshold).toBe(0.99);
   });
 
+  it("é reproduzível: duas execuções dão exatamente o mesmo ranking, inclusive nos empates de score", async () => {
+    const dataset = await loadDataset(DEV_DIR);
+    const embeddings = embeddingsWith();
+    const first = await runEvaluation({ databaseUrl: url, dataset, set: "dev", embeddings });
+    const second = await runEvaluation({ databaseUrl: url, dataset, set: "dev", embeddings });
+    expect(second.map((r) => r.suite)).toEqual(first.map((r) => r.suite));
+  });
+
   it("com embeddings roda também o modo vetorial e avalia o limiar configurado", async () => {
     const dataset = await loadDataset(DEV_DIR);
     const results = await runEvaluation({ databaseUrl: url, dataset, set: "dev", embeddings: embeddingsWith(createFakeProvider("modelo-falso")) });

@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import pg from "pg";
 import { createPasswordHasher } from "../../../apps/api/src/modules/auth/password.js";
 import { createUser } from "../../../apps/api/src/modules/auth/users.js";
@@ -31,8 +31,22 @@ function requireField(doc: EvalDocument, field: "ambiente" | "resultado"): strin
   throw new Error(`Documento ${doc.id}: o campo "${field}" está vazio e o artigo do app exige texto. Corrija o conjunto de dados; o runner não inventa conteúdo.`);
 }
 
+// Os empates de score são desfeitos pelo id da linha (ORDER BY score DESC, id). Com uuid aleatório o ranking mudaria
+// a cada execução; derivando o id do id do corpus o resultado fica reproduzível.
+function stableUuid(corpusId: string): string {
+  const hex = createHash("sha256").update(`nexus-eval:${corpusId}`).digest("hex").slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 // Os mesmos campos que a Semana 0 indexou, repartidos nas colunas do app. Artigo publicado e chamado resolvido
 // são as únicas fontes pesquisáveis (FR-15), então é assim que o corpus precisa entrar.
+// Nome de tabela vem do código acima, nunca do conjunto de dados. Ainda não há linhas filhas (tags, eventos).
+async function fixId(pool: pg.Pool, table: "kb_articles" | "tickets", id: string, corpusId: string): Promise<string> {
+  const stable = stableUuid(corpusId);
+  await pool.query(`UPDATE ${table} SET id = $2 WHERE id = $1`, [id, stable]);
+  return stable;
+}
+
 async function seedCorpus(pool: pg.Pool, documents: EvalDocument[]): Promise<Map<string, string>> {
   const hasher = createPasswordHasher({ N: 1024, r: 8, p: 1 }); // ninguém faz login: custo baixo basta
   const password = randomBytes(16).toString("hex");
@@ -50,7 +64,7 @@ async function seedCorpus(pool: pg.Pool, documents: EvalDocument[]): Promise<Map
         expectedResult: requireField(doc, "resultado"),
       });
       await updateArticle(pool, id, { status: "published" });
-      corpusIds.set(id, doc.id);
+      corpusIds.set(await fixId(pool, "kb_articles", id, doc.id), doc.id);
     } else {
       const id = await insertTicket(pool, requester.id, {
         title: doc.titulo,
@@ -58,7 +72,7 @@ async function seedCorpus(pool: pg.Pool, documents: EvalDocument[]): Promise<Map
         category: TICKET_CATEGORY[doc.categoria] ?? "other",
       });
       await updateTicket(pool, id, { status: "resolved", resolution_note: [doc.procedimento, doc.resultado].filter(Boolean).join("\n"), resolved_at: new Date() });
-      corpusIds.set(id, doc.id);
+      corpusIds.set(await fixId(pool, "tickets", id, doc.id), doc.id);
     }
   }
   return corpusIds;
