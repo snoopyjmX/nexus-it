@@ -5,6 +5,7 @@ import { decodeCursor, encodeCursor } from "../../lib/cursor.js";
 import { HttpError } from "../../lib/errors.js";
 import { can, type PolicyActor } from "../../policy/index.js";
 import type { Auth, AuthContext } from "../auth/index.js";
+import { articleText, embedOrNull, pendingCounts, type Embeddings } from "../embeddings/index.js";
 import type { Queryable } from "../tickets/store.js";
 import { findArticle, insertArticle, listArticles, search as runSearch, setTags, updateArticle, type Article } from "./store.js";
 
@@ -49,9 +50,11 @@ function articleId(req: Request): string {
 export interface KnowledgeDeps {
   pool: pg.Pool;
   auth: Auth;
+  // Sem isto (ou com o Ollama fora do ar) tudo funciona só com a busca por palavras (FR-13).
+  embeddings?: Embeddings;
 }
 
-export function createKnowledgeRouters({ pool, auth }: KnowledgeDeps) {
+export function createKnowledgeRouters({ pool, auth, embeddings }: KnowledgeDeps) {
   const csrf: RequestHandler = auth.requireCsrf;
   // Rotas de escrita: o papel é checado antes de olhar o artigo, então solicitante recebe 403 (FR-02).
   const technicianOnly: RequestHandler = (_req, res, next) => {
@@ -114,10 +117,21 @@ export function createKnowledgeRouters({ pool, auth }: KnowledgeDeps) {
     const { version: expected, tags: tagList, ...changes } = parse(patchSchema, req.body);
     if (tagList === undefined && Object.values(changes).every((value) => value === undefined)) throw new HttpError(400, "Nenhum campo para alterar.");
 
+    // O vetor sai antes da transação: chamada HTTP lenta dentro dela seguraria a conexão (ADR-007).
+    const before = await visible(pool, actor, id);
+    if (before.version !== expected) throw new HttpError(409, "O artigo foi alterado por outra pessoa. Recarregue e tente de novo.");
+    const merged = { ...before, ...Object.fromEntries(Object.entries(changes).filter(([, value]) => value !== undefined)) };
+    const textChanged = articleText(merged) !== articleText(before);
+    // Publicado e com texto novo: o vetor antigo ficou velho, então é recalculado ou apagado.
+    const vector = before.status === "published" && textChanged ? await embedOrNull(embeddings, articleText(merged)) : undefined;
+
     const updated = await inTransaction(async (db) => {
       const article = await visible(db, actor, id, true);
       if (article.version !== expected) throw new HttpError(409, "O artigo foi alterado por outra pessoa. Recarregue e tente de novo.");
-      await updateArticle(db, id, changes);
+      await updateArticle(db, id, {
+        ...changes,
+        ...(article.status === "published" && textChanged ? { embedding: vector?.literal ?? null, embedding_model: vector?.model ?? null } : {}),
+      });
       if (tagList !== undefined) await setTags(db, id, tagList);
       return visible(db, actor, id);
     });
@@ -128,10 +142,14 @@ export function createKnowledgeRouters({ pool, auth }: KnowledgeDeps) {
     articles.post(`/:id/${action}`, csrf, technicianOnly, async (req, res) => {
       const actor = actorOf(res);
       const id = articleId(req);
+      const before = await visible(pool, actor, id);
+      const vector = action === "publish" && before.status === "draft" ? await embedOrNull(embeddings, articleText(before)) : null;
       const updated = await inTransaction(async (db) => {
         const article = await visible(db, actor, id, true);
         if (article.status !== from) throw new HttpError(422, `O artigo já está ${article.status === "published" ? "publicado" : "em rascunho"}.`);
-        await updateArticle(db, id, { status: to });
+        if (action === "publish" && article.version !== before.version) throw new HttpError(409, "O artigo foi alterado por outra pessoa. Recarregue e tente de novo.");
+        // Despublicar limpa o vetor no mesmo UPDATE (FR-15); o banco recusa vetor em rascunho.
+        await updateArticle(db, id, { status: to, embedding: vector?.literal ?? null, embedding_model: vector?.model ?? null });
         return visible(db, actor, id);
       });
       res.json(updated);
@@ -142,7 +160,15 @@ export function createKnowledgeRouters({ pool, auth }: KnowledgeDeps) {
   search.use(auth.requireAuth);
   search.get("/", async (req, res) => {
     const { q, limit } = parse(searchSchema, req.query);
-    res.json({ mode: "lexical", items: await runSearch(pool, actorOf(res), q, limit) });
+    const vector = await embedOrNull(embeddings, q);
+    const items = await runSearch(pool, actorOf(res), q, limit, vector && embeddings ? { literal: vector.literal, minScore: embeddings.minScore } : undefined);
+    // `degraded`: a busca semântica está ligada mas não respondeu; a tela avisa (FR-13).
+    res.json({ mode: vector ? "vector" : "lexical", degraded: embeddings !== undefined && !vector, items });
+  });
+
+  search.get("/status", technicianOnly, async (_req, res) => {
+    if (!embeddings) return void res.json({ embeddings: { enabled: false } });
+    res.json({ embeddings: { enabled: true, model: embeddings.provider.model, minScore: embeddings.minScore, pending: await pendingCounts(pool, embeddings.provider.model) } });
   });
 
   return { articles, search };

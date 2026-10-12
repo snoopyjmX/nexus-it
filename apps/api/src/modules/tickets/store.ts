@@ -134,11 +134,13 @@ export type TicketChanges = Partial<{
   assignee_id: string | null;
   resolution_note: string;
   resolved_at: Date | null;
+  embedding: string | null;
+  embedding_model: string | null;
 }>;
 
 export async function updateTicket(db: Queryable, id: string, changes: TicketChanges): Promise<void> {
   const entries = Object.entries(changes);
-  const sets = entries.map(([column], i) => `${column} = $${i + 2}`);
+  const sets = entries.map(([column], i) => `${column} = $${i + 2}${column === "embedding" ? "::vector" : ""}`);
   await db.query(`UPDATE tickets SET ${[...sets, "version = version + 1", "updated_at = now()"].join(", ")} WHERE id = $1`, [id, ...entries.map(([, value]) => value)]);
 }
 
