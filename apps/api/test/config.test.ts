@@ -38,4 +38,13 @@ describe("loadConfig (inicialização falha cedo)", () => {
     expect(loadConfig({ ...valid, DIAGNOSIS_THRESHOLD_TRUSTED: "true" }).DIAGNOSIS_THRESHOLD_TRUSTED).toBe(true);
     expect(() => loadConfig({ ...valid, DIAGNOSIS_THRESHOLD_TRUSTED: "talvez" })).toThrow(/DIAGNOSIS_THRESHOLD_TRUSTED/);
   });
+
+  it("o resumo por modelo (ADR-008) vem desligado, com gemma3:4b como candidato, e valida limites", () => {
+    const config = loadConfig(valid);
+    expect(config).toMatchObject({ LLM_ENABLED: false, LLM_MODEL: "gemma3:4b", LLM_TIMEOUT_MS: 60_000 });
+    expect(loadConfig({ ...valid, LLM_ENABLED: "true" }).LLM_ENABLED).toBe(true);
+    expect(() => loadConfig({ ...valid, LLM_ENABLED: "sim" })).toThrow(/LLM_ENABLED/);
+    expect(() => loadConfig({ ...valid, LLM_MODEL: "" })).toThrow(/LLM_MODEL/);
+    expect(() => loadConfig({ ...valid, LLM_TIMEOUT_MS: "10" })).toThrow(/LLM_TIMEOUT_MS/);
+  });
 });

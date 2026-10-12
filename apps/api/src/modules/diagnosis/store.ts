@@ -10,14 +10,30 @@ export interface RunRecord {
   abstained: boolean;
   evidence: "threshold" | "unverified" | null;
   durationMs: number;
+  llm: { model: string; promptVersion: string; outcome: "ok" | "provider_error" | "invalid_output" | "uncited"; discarded: number } | null;
 }
 
 // Só ids e desfecho: o texto do chamado e das fontes nunca vai para esta tabela (ADR-011).
 export async function insertRun(db: Queryable, run: RunRecord): Promise<string> {
   const { rows } = await db.query<{ id: string }>(
-    `INSERT INTO ai_runs (ticket_id, user_id, mode, search_mode, degraded, retrieved, abstained, evidence, duration_ms)
-     VALUES ($1, $2, 'deterministic', $3, $4, $5::jsonb, $6, $7, $8) RETURNING id`,
-    [run.ticketId, run.userId, run.searchMode, run.degraded, JSON.stringify(run.retrieved), run.abstained, run.evidence, run.durationMs],
+    `INSERT INTO ai_runs (ticket_id, user_id, mode, search_mode, degraded, retrieved, abstained, evidence, duration_ms,
+                          llm_model, llm_prompt_version, llm_outcome, llm_discarded_citations)
+     VALUES ($1, $2, $9, $3, $4, $5::jsonb, $6, $7, $8, $10, $11, $12, $13) RETURNING id`,
+    [
+      run.ticketId,
+      run.userId,
+      run.searchMode,
+      run.degraded,
+      JSON.stringify(run.retrieved),
+      run.abstained,
+      run.evidence,
+      run.durationMs,
+      run.llm?.outcome === "ok" ? "llm" : "deterministic",
+      run.llm?.model ?? null,
+      run.llm?.promptVersion ?? null,
+      run.llm?.outcome ?? null,
+      run.llm?.discarded ?? 0,
+    ],
   );
   return rows[0]?.id as string;
 }

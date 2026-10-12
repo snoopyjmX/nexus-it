@@ -16,6 +16,10 @@ const schema = z.object({
   // Diagnóstico (ADR-011): true aplica o corte do limiar quando a busca é vetorial. O padrão é false até a
   // recalibração na base real ser registrada (ADR-007): fontes rotuladas "evidência não verificada" (FR-10).
   DIAGNOSIS_THRESHOLD_TRUSTED: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
+  // Resumo opcional por modelo (ADR-008, opção B). Desligado até a re-medição da Fase 4 (p50 de até 20 s).
+  LLM_ENABLED: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
+  LLM_MODEL: z.string().min(1).default("gemma3:4b"),
+  LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).max(300_000).default(60_000),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
 });
 

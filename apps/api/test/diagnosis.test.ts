@@ -4,6 +4,7 @@ import request from "supertest";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { migrate } from "../src/db/migrate.js";
 import { articleProcedures } from "../src/modules/diagnosis/store.js";
+import type { SummaryProvider } from "../src/modules/diagnosis/summary.js";
 import { createPool } from "../src/lib/db.js";
 import { createLogger } from "../src/lib/logger.js";
 import type { Embeddings } from "../src/modules/embeddings/index.js";
@@ -497,5 +498,128 @@ describe("tabela ai_runs (restrições do banco)", () => {
     await expect(insert({ feedback_useful: true })).rejects.toMatchObject({ code: "23514" });
     await expect(insert({ feedback_at: new Date() })).rejects.toMatchObject({ code: "23514" });
     await expect(insert({ feedback_useful: true, feedback_at: new Date() })).rejects.toMatchObject({ code: "23514" });
+  });
+});
+
+describe("resumo opcional do modelo (ADR-008, FR-13, T-05)", () => {
+  function fakeSummarizer(content: string | (() => never)): SummaryProvider & { calls: { system: string; user: string }[] } {
+    const calls: { system: string; user: string }[] = [];
+    return {
+      model: "gemma3:4b",
+      calls,
+      async complete(prompt) {
+        calls.push(prompt);
+        return typeof content === "function" ? content() : content;
+      },
+    };
+  }
+  const citing = (text: string, labels: string[]) => JSON.stringify({ resumo: text, fontes: labels });
+
+  async function runRow(runId: string) {
+    const { rows } = await pool.query("SELECT * FROM ai_runs WHERE id = $1", [runId]);
+    return rows[0];
+  }
+
+  it("desligado por padrão: sem resumo, modo determinístico, resposta igual à de antes", async () => {
+    await start();
+    await publishedArticle();
+    const res = await diagnose(await newTicket());
+    expect(res.status).toBe(201);
+    expect(res.body.llm).toBe("off");
+    expect(res.body.summary).toBeNull();
+    expect((await runRow(res.body.runId)).mode).toBe("deterministic");
+  });
+
+  it("com o modelo ligado devolve o resumo com ids das fontes e registra só modelo, versão e desfecho", async () => {
+    const summarizer = fakeSummarizer(citing("Reiniciar o spooler costuma resolver este caso.", ["F1", "F9"]));
+    await start({ diagnosis: { summarizer } });
+    const articleId = await publishedArticle();
+    const res = await diagnose(await newTicket());
+    expect(res.status).toBe(201);
+    expect(res.body.llm).toBe("ok");
+    expect(res.body.summary).toEqual({ text: "Reiniciar o spooler costuma resolver este caso.", sourceIds: [articleId] });
+    expect(sourceIds(res.body)).toContain(articleId);
+
+    const row = await runRow(res.body.runId);
+    expect(row).toMatchObject({ mode: "llm", llm_model: "gemma3:4b", llm_outcome: "ok", llm_discarded_citations: 1 });
+    expect(row.llm_prompt_version).toMatch(/^resumo-v\d+$/);
+    expect(JSON.stringify(row)).not.toContain("spooler costuma");
+  });
+
+  it("o resumo não altera fontes, passos nem evidência", async () => {
+    await start();
+    await publishedArticle();
+    const ticket = await newTicket();
+    const without = (await diagnose(ticket)).body;
+    await start({ diagnosis: { summarizer: fakeSummarizer(citing("Resumo.", ["F1"])) } });
+    await publishedArticle();
+    const withLlm = (await diagnose(await newTicket())).body;
+    expect(withLlm.sources.map((s: Source) => s.title)).toEqual(without.sources.map((s: Source) => s.title));
+    expect(withLlm.steps.map((s: { text: string }) => s.text)).toEqual(without.steps.map((s: { text: string }) => s.text));
+    expect(withLlm.evidence).toBe(without.evidence);
+  });
+
+  it("em abstenção o modelo nem é chamado", async () => {
+    const summarizer = fakeSummarizer(citing("Resumo.", ["F1"]));
+    await start({ diagnosis: { summarizer } });
+    const res = await diagnose(await newTicket(ana, { title: "Zzzz qqqq", description: "xxxx yyyy" }));
+    expect(res.body).toMatchObject({ abstained: true, llm: "off", summary: null });
+    expect(summarizer.calls).toHaveLength(0);
+  });
+
+  it.each([
+    ["modelo fora do ar", () => { throw new Error("Ollama fora do ar"); }, "provider_error"],
+    ["resposta inválida", "isto não é JSON", "invalid_output"],
+    ["resumo sem fonte válida", citing("Resumo.", ["F9"]), "uncited"],
+  ] as const)("%s: o diagnóstico determinístico segue inteiro, sem resumo", async (_nome, content, outcome) => {
+    await start({ diagnosis: { summarizer: fakeSummarizer(content) } });
+    const articleId = await publishedArticle();
+    const res = await diagnose(await newTicket());
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ llm: "unavailable", summary: null, abstained: false });
+    expect(sourceIds(res.body)).toContain(articleId);
+    expect(res.body.steps.length).toBeGreaterThan(0);
+    expect(await runRow(res.body.runId)).toMatchObject({ mode: "deterministic", llm_outcome: outcome, llm_model: "gemma3:4b" });
+  });
+
+  it("o prompt leva só o chamado pedido e fontes que o técnico pode ver (rascunho fica de fora)", async () => {
+    const summarizer = fakeSummarizer(citing("Resumo.", ["F1"]));
+    await start({ diagnosis: { summarizer } });
+    await publishedArticle();
+    const draft = await api(app, tecnico).post("/articles", { ...ARTICLE, title: "Rascunho secreto de impressora", tags: [] });
+    expect(draft.status).toBe(201);
+    const other = await newTicket(bia, { title: "Outro chamado privado da Bia", description: "nada a ver" });
+    await diagnose(await newTicket());
+    const prompt = summarizer.calls[0]?.user ?? "";
+    expect(prompt).toContain(TICKET.title);
+    expect(prompt).not.toContain("Rascunho secreto");
+    expect(prompt).not.toContain("Outro chamado privado");
+    expect(other).toBeTruthy();
+  });
+});
+
+describe("colunas do modelo em ai_runs (restrições do banco)", () => {
+  async function insert(over: Record<string, unknown>): Promise<void> {
+    await start();
+    const ticket = await newTicket();
+    const row = { ticket_id: ticket, user_id: tecnico.id, mode: "deterministic", search_mode: "lexical", degraded: false, retrieved: "[]", abstained: true, evidence: null, duration_ms: 5, ...over };
+    const keys = Object.keys(row);
+    await pool.query(`INSERT INTO ai_runs (${keys.join(", ")}) VALUES (${keys.map((_, i) => `$${i + 1}`).join(", ")})`, Object.values(row));
+  }
+  const ok = { abstained: false, evidence: "unverified", llm_model: "m", llm_prompt_version: "resumo-v1", llm_outcome: "ok", llm_discarded_citations: 0 };
+
+  it("aceita execução com resumo", async () => {
+    await expect(insert({ ...ok, mode: "llm" })).resolves.toBeUndefined();
+  });
+
+  it.each([
+    ["desfecho desconhecido", { ...ok, llm_outcome: "talvez" }],
+    ["modo llm sem desfecho ok", { ...ok, mode: "llm", llm_outcome: "uncited" }],
+    ["desfecho ok com modo determinístico", { ...ok, mode: "deterministic" }],
+    ["desfecho sem modelo", { ...ok, llm_model: null }],
+    ["modelo sem desfecho", { abstained: false, evidence: "unverified", llm_model: "m", llm_prompt_version: "resumo-v1" }],
+    ["citações descartadas negativas", { ...ok, mode: "llm", llm_discarded_citations: -1 }],
+  ])("recusa %s", async (_nome, over) => {
+    await expect(insert(over)).rejects.toMatchObject({ code: "23514" });
   });
 });
