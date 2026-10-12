@@ -4,7 +4,7 @@ Ferramenta interna de suporte de TI (organização fictícia). Técnico abre um 
 Especificação única: @docs/PRD.md. Arquitetura e specs: @docs/ARCHITECTURE.md. Ameaças: docs/THREAT_MODEL.md.
 
 ## Fase atual
-Fase 2 (Chamados, KB, busca lexical; em andamento: base de conhecimento e busca lexical; chamados e política já entregues). NÃO implemente nada de fases futuras nem itens de "Fora do escopo" do PRD.
+Fase 2 (Chamados, KB, busca lexical) entregue; próxima: Fase 3 (dataset e busca vetorial). NÃO implemente nada de fases futuras nem itens de "Fora do escopo" do PRD.
 
 ## Stack (não troque sem ADR)
 pnpm monorepo · apps/web: React + TS + Vite + Tailwind + TanStack Query · apps/api: Node LTS + TS + Express 5 + Zod · Postgres + pgvector via driver `pg` e SQL parametrizado · Vitest, Supertest, Playwright · Docker Compose · GitHub Actions.
@@ -13,7 +13,7 @@ pnpm monorepo · apps/web: React + TS + Vite + Tailwind + TanStack Query · apps
 - `pnpm lint` · `pnpm typecheck` · `pnpm test` (precisa do banco: `docker compose up -d db` e `.env.test`)
 - `pnpm db:migrate` · `pnpm db:seed` (exige `SEED_PASSWORD`) · `pnpm user:create` · `pnpm dev:api` · `pnpm dev:web`
 - Semana 0: `cd semana0 && pnpm busca` · `pnpm geracao` (ver semana0/README.md). Nunca escreva consultas, corpus, gold ou critérios por ele.
-- Ainda não existe: `pnpm test:e2e` (Fase 2)
+- Ainda não existe: `pnpm test:e2e` (Fase 5)
 
 ## Regras inegociáveis
 - Toda mudança cita um ID (FR-xx, NFR-xx, T-xx) e entrega teste junto. Sem teste, não está pronto.

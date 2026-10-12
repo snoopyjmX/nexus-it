@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Route, Routes } from "react-router";
 import { AuthProvider } from "./auth";
 import { Layout } from "./Layout";
+import { ArticleForm } from "./pages/ArticleForm";
 import { ArticlePage } from "./pages/ArticlePage";
 import { Home } from "./pages/Home";
 import { Knowledge } from "./pages/Knowledge";
@@ -27,7 +28,9 @@ export function App() {
             <Route path="chamados/novo" element={<NewTicket />} />
             <Route path="chamados/:id" element={<TicketDetail />} />
             <Route path="base" element={<Knowledge />} />
+            <Route path="base/novo" element={<ArticleForm mode="create" />} />
             <Route path="base/:id" element={<ArticlePage />} />
+            <Route path="base/:id/editar" element={<ArticleForm mode="edit" />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
