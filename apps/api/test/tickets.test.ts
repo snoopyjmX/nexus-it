@@ -378,3 +378,40 @@ describe("histórico append-only (FR-05)", () => {
     await expect(pool.query("DELETE FROM ticket_events WHERE ticket_id = $1", [id])).rejects.toThrow();
   });
 });
+
+describe("a ordem do histórico e da conversa não depende do relógio (FR-05)", () => {
+  // Dois INSERTs seguidos podem empatar no created_at, ou o relógio recuar (medido num Postgres em Docker). A ordem
+  // tem de ser a da gravação. Os ids decrescem de propósito: desempatar por id inverteria a ordem certa.
+  const IDS = ["ffffffff-0000-4000-8000-000000000003", "ffffffff-0000-4000-8000-000000000002", "ffffffff-0000-4000-8000-000000000001"];
+  const SAME_TIME = "2999-01-01T00:00:00Z";
+
+  it("eventos com o mesmo created_at saem na ordem em que foram gravados", async () => {
+    const id = await openTicket();
+    for (const [i, type] of (["edited", "priority_changed", "category_changed"] as const).entries()) {
+      await pool.query("INSERT INTO ticket_events (id, ticket_id, actor_id, event_type, created_at) VALUES ($1, $2, $3, $4, $5)", [IDS[i], id, tecnico.id, type, SAME_TIME]);
+    }
+    const items = (await api(app, tecnico).get(`/tickets/${id}/events`)).body.items;
+    expect(items.map((e: { type: string }) => e.type)).toEqual(["created", "edited", "priority_changed", "category_changed"]);
+    expect(Object.keys(items[0])).not.toContain("seq"); // a numeração é interna, não faz parte da resposta
+  });
+
+  it("comentários com o mesmo created_at saem na ordem em que foram gravados", async () => {
+    const id = await openTicket();
+    for (const [i, body] of ["primeiro", "segundo", "terceiro"].entries()) {
+      await pool.query("INSERT INTO ticket_comments (id, ticket_id, author_id, body, created_at) VALUES ($1, $2, $3, $4, $5)", [IDS[i], id, ana.id, body, SAME_TIME]);
+    }
+    const items = (await api(app, ana).get(`/tickets/${id}/comments`)).body.items;
+    expect(items.map((c: { body: string }) => c.body)).toEqual(["primeiro", "segundo", "terceiro"]);
+    expect(Object.keys(items[0])).not.toContain("seq");
+  });
+
+  it("seq é obrigatório e gerado pelo banco nas duas tabelas", async () => {
+    const { rows } = await pool.query(
+      "SELECT table_name, is_nullable, is_identity, identity_generation FROM information_schema.columns WHERE column_name = 'seq' AND table_name IN ('ticket_events', 'ticket_comments') ORDER BY table_name",
+    );
+    expect(rows).toEqual([
+      { table_name: "ticket_comments", is_nullable: "NO", is_identity: "YES", identity_generation: "ALWAYS" },
+      { table_name: "ticket_events", is_nullable: "NO", is_identity: "YES", identity_generation: "ALWAYS" },
+    ]);
+  });
+});
