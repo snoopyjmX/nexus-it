@@ -1,26 +1,27 @@
-import { useEffect, useState } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
+import { Route, Routes } from "react-router";
+import { AuthProvider } from "./auth";
+import { Layout } from "./Layout";
+import { Home } from "./pages/Home";
+import { Login } from "./pages/Login";
+import { NotFound } from "./pages/NotFound";
+import { createQueryClient } from "./queryClient";
 
-type Status = "verificando" | "ok" | "indisponível";
-
-// Tela provisória da Fase 1: confirma que web, API e banco conversam.
+// O roteador (BrowserRouter ou MemoryRouter nos testes) vem de fora.
 export function App() {
-  const [status, setStatus] = useState<Status>("verificando");
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/v1/health/ready", { signal: controller.signal })
-      .then((res) => setStatus(res.ok ? "ok" : "indisponível"))
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setStatus("indisponível");
-      });
-    return () => controller.abort();
-  }, []);
-
+  const [client] = useState(createQueryClient);
   return (
-    <main>
-      <h1>NEXUS IT</h1>
-      <p role="status">API e banco: {status}</p>
-    </main>
+    <QueryClientProvider client={client}>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
