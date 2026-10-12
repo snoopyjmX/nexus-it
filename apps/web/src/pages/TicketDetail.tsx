@@ -6,6 +6,7 @@ import { useAuth, type User } from "../auth";
 import { CATEGORY_LABEL, PRIORITY_LABEL, STATUS_LABEL, describeEvent, formatDate } from "../labels";
 import type { Status, Ticket, TicketComment, TicketEvent } from "../types";
 import { Badge, Button, ErrorMessage, Field, Loading, focusRing, inputClass } from "../ui";
+import { DiagnosisPanel } from "./DiagnosisPanel";
 import { NotFound } from "./NotFound";
 
 interface Action {
@@ -103,7 +104,7 @@ export function TicketDetail() {
 
   const patch = (changes: object) => mutation.mutate({ method: "PATCH", path: "", body: { version: t.version, ...changes } });
 
-  return (
+  const main = (
     <>
       <p className="mb-2">
         <Link to="/chamados" className={`text-blue-800 underline ${focusRing}`}>
@@ -263,5 +264,14 @@ export function TicketDetail() {
         </ol>
       </section>
     </>
+  );
+
+  // O técnico vê o painel de diagnóstico ao lado do chamado (ARCHITECTURE §7).
+  if (!technician) return main;
+  return (
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-start lg:gap-8">
+      <div>{main}</div>
+      <DiagnosisPanel key={t.id} ticketId={t.id} />
+    </div>
   );
 }
