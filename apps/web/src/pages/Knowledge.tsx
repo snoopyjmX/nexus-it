@@ -3,8 +3,44 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import type { ArticleSummary, Page, SearchHit } from "../types";
+import type { ArticleSummary, Page, SearchResponse, SearchStatus } from "../types";
 import { Badge, Button, ErrorMessage, Field, Loading, focusRing, inputClass } from "../ui";
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+// Só o técnico vê (o servidor também recusa o solicitante). Falha aqui não derruba a lista (FR-13).
+function SemanticStatus() {
+  const status = useQuery({ queryKey: ["search-status"], queryFn: () => api<SearchStatus>("GET", "/search/status") });
+  const info = status.data?.embeddings;
+  const pending = info?.enabled ? info.pending : undefined;
+  return (
+    <section aria-labelledby="semantic-title" className="mb-4 max-w-xl rounded border border-slate-300 p-3">
+      <h2 id="semantic-title" className="mb-1 font-semibold">
+        Busca semântica
+      </h2>
+      {status.isPending && <Loading />}
+      {status.isError && <ErrorMessage>Não foi possível ler o estado da busca semântica.</ErrorMessage>}
+      {info && !info.enabled && <p>Desligada: só a busca por palavras está ativa.</p>}
+      {info?.enabled && (
+        <>
+          <p>
+            Modelo <span className="font-mono">{info.model}</span> · limiar <span className="font-mono">{info.minScore.toLocaleString("pt-BR", { minimumFractionDigits: 4 })}</span>
+          </p>
+          {pending && pending.articles + pending.tickets === 0 ? (
+            <p>Vetores em dia.</p>
+          ) : (
+            pending && (
+              <ul className="list-disc pl-5">
+                <li>{plural(pending.articles, "artigo sem vetor", "artigos sem vetor")}</li>
+                <li>{plural(pending.tickets, "chamado sem vetor", "chamados sem vetor")}</li>
+              </ul>
+            )
+          )}
+        </>
+      )}
+    </section>
+  );
+}
 
 export function Knowledge() {
   const { user } = useAuth();
@@ -18,7 +54,7 @@ export function Knowledge() {
     queryFn: () => api<Page<ArticleSummary>>("GET", `/articles?limit=50${status ? `&status=${status}` : ""}`),
     enabled: !searching,
   });
-  const found = useQuery({ queryKey: ["search", term], queryFn: () => api<{ items: SearchHit[] }>("GET", `/search?q=${encodeURIComponent(term)}`), enabled: searching });
+  const found = useQuery({ queryKey: ["search", term], queryFn: () => api<SearchResponse>("GET", `/search?q=${encodeURIComponent(term)}`), enabled: searching });
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,6 +80,8 @@ export function Knowledge() {
         </div>
         <Button type="submit">Buscar</Button>
       </form>
+
+      {technician && <SemanticStatus />}
 
       {technician && !searching && (
         <div className="mb-4 max-w-xs">
@@ -80,6 +118,12 @@ export function Knowledge() {
           <p className="mb-2" role="status">
             {found.data.items.length === 0 ? `Nada encontrado para “${term}”.` : `${found.data.items.length} resultado(s) para “${term}”.`}
           </p>
+          <p className="mb-2 text-sm">{found.data.mode === "vector" ? "Busca semântica" : "Busca por palavras"}</p>
+          {found.data.degraded && (
+            <p role="note" className="mb-2 rounded border border-amber-700 bg-amber-50 px-3 py-2 text-amber-900">
+              A busca semântica está indisponível no momento; os resultados abaixo são por palavras.
+            </p>
+          )}
           <ul className="divide-y divide-slate-300 rounded border border-slate-300">
             {found.data.items.map((hit) => (
               <li key={`${hit.kind}-${hit.id}`} className="space-y-1 p-3">
