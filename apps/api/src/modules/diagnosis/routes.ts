@@ -1,4 +1,5 @@
 import { type Request, type RequestHandler, Router } from "express";
+import type { Logger } from "pino";
 import type pg from "pg";
 import { z } from "zod";
 import { HttpError } from "../../lib/errors.js";
@@ -10,6 +11,7 @@ import { searchKnowledge } from "../knowledge/search.js";
 import { findTicket } from "../tickets/store.js";
 import { SOURCES_MAX, articleIdsForSteps, buildQuery, evidenceFor, toSources, toSteps } from "./service.js";
 import { articleProcedures, insertRun, setFeedback } from "./store.js";
+import { PROMPT_VERSION, summarize, type SummaryProvider } from "./summary.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -37,11 +39,14 @@ export interface DiagnosisDeps {
   // Padrão false (ADR-011, ADR-007): sem a recalibração registrada, "evidência não verificada" mesmo com busca vetorial (FR-10).
   thresholdTrusted?: boolean;
   limits?: { max: number; windowMs: number };
+  // Camada opcional do modelo (ADR-008). Sem ela o diagnóstico é só o determinístico.
+  summarizer?: SummaryProvider;
+  logger?: Logger;
 }
 
 // Monta as rotas direto em /api/v1 (o diagnóstico mora em /tickets/:id e em /diagnosis-runs), por isso a
 // autenticação é por rota, e não um router.use que alcançaria também /health.
-export function createDiagnosisRouter({ pool, auth, embeddings, thresholdTrusted = false, limits = { max: 10, windowMs: 60_000 } }: DiagnosisDeps) {
+export function createDiagnosisRouter({ pool, auth, embeddings, thresholdTrusted = false, limits = { max: 10, windowMs: 60_000 }, summarizer, logger }: DiagnosisDeps) {
   const router = Router();
   const csrf: RequestHandler = auth.requireCsrf;
   const limiter = createRateLimiter(limits);
@@ -68,6 +73,8 @@ export function createDiagnosisRouter({ pool, auth, embeddings, thresholdTrusted
       const evidence = evidenceFor(outcome, sources, thresholdTrusted);
       const stepSources = articleIdsForSteps(sources);
       const steps = toSteps(stepSources, await articleProcedures(pool, stepSources));
+      // O modelo só redige sobre o resultado já decidido e não é chamado em abstenção.
+      const summary = summarizer && evidence !== null ? await summarize(summarizer, { ticket, sources, steps }, (error) => logger?.warn({ errorName: error instanceof Error ? error.name : typeof error }, "resumo do modelo indisponível")) : null;
       const runId = await insertRun(pool, {
         ticketId: ticket.id,
         userId: actor.id,
@@ -77,8 +84,19 @@ export function createDiagnosisRouter({ pool, auth, embeddings, thresholdTrusted
         abstained: evidence === null,
         evidence,
         durationMs: Math.round(performance.now() - started),
+        llm: summarizer && summary ? { model: summarizer.model, promptVersion: PROMPT_VERSION, outcome: summary.status, discarded: summary.discarded } : null,
       });
-      res.status(201).json({ runId, mode: outcome.mode, degraded: outcome.degraded, abstained: evidence === null, evidence, sources, steps });
+      res.status(201).json({
+        runId,
+        mode: outcome.mode,
+        degraded: outcome.degraded,
+        abstained: evidence === null,
+        evidence,
+        sources,
+        steps,
+        llm: summary === null ? "off" : summary.status === "ok" ? "ok" : "unavailable",
+        summary: summary?.status === "ok" ? { text: summary.text, sourceIds: summary.sourceIds } : null,
+      });
     } finally {
       running.delete(actor.id);
     }

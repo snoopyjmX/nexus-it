@@ -6,6 +6,7 @@ import { createAuth } from "./modules/auth/index.js";
 import type { Embeddings } from "./modules/embeddings/index.js";
 import { createOllamaProvider } from "./modules/embeddings/provider.js";
 import { createDiagnosisRouter } from "./modules/diagnosis/routes.js";
+import { createOllamaSummaryProvider } from "./modules/diagnosis/summary-provider.js";
 import { createKnowledgeRouters } from "./modules/knowledge/routes.js";
 import { createTicketsRouter } from "./modules/tickets/routes.js";
 import { createPasswordHasher } from "./modules/auth/password.js";
@@ -27,7 +28,11 @@ const app = createApp({
   auth,
   tickets: createTicketsRouter({ pool, auth, ...(embeddings ? { embeddings } : {}) }),
   knowledge: createKnowledgeRouters({ pool, auth, ...(embeddings ? { embeddings } : {}) }),
-  diagnosis: createDiagnosisRouter({ pool, auth, thresholdTrusted: config.DIAGNOSIS_THRESHOLD_TRUSTED, ...(embeddings ? { embeddings } : {}) }),
+  diagnosis: createDiagnosisRouter({ pool, auth, thresholdTrusted: config.DIAGNOSIS_THRESHOLD_TRUSTED,
+    logger,
+    ...(embeddings ? { embeddings } : {}),
+    ...(config.LLM_ENABLED ? { summarizer: createOllamaSummaryProvider({ baseUrl: config.OLLAMA_BASE_URL, model: config.LLM_MODEL, timeoutMs: config.LLM_TIMEOUT_MS }) } : {}),
+  }),
 });
 
 const server = app.listen(config.PORT, () => {

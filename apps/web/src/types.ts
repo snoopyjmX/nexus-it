@@ -86,6 +86,9 @@ export interface Diagnosis {
   degraded: boolean;
   abstained: boolean;
   evidence: "threshold" | "unverified" | null;
+  // off: sem modelo (ou abstenção); ok: há resumo; unavailable: o modelo falhou e o resto segue valendo (FR-13).
+  llm: "off" | "ok" | "unavailable";
+  summary: { text: string; sourceIds: string[] } | null;
   sources: DiagnosisSource[];
   steps: { articleId: string; text: string }[];
 }

@@ -38,6 +38,8 @@ const result: Diagnosis = {
   degraded: false,
   abstained: false,
   evidence: "unverified",
+  llm: "off",
+  summary: null,
   sources: [
     { kind: "article", id: "a-1", title: "Impressora de rede não imprime", symptom: "Os trabalhos ficam parados na fila.", tags: ["impressora"] },
     { kind: "ticket", id: "t-7", title: "Fila travada no setor 2", summary: "Spooler reiniciado." },
@@ -300,5 +302,66 @@ describe("painel de diagnóstico: feedback (FR-11)", () => {
     await user.click(within(aside).getByRole("button", { name: "Enviar avaliação" }));
     await within(aside).findByText("Avaliação registrada.");
     expect(calls.filter((c) => c.path.endsWith("/feedback")).map((c) => c.path)).toEqual(["/diagnosis-runs/run-1/feedback", "/diagnosis-runs/run-2/feedback"]);
+  });
+});
+
+describe("resumo gerado pelo modelo (ADR-008, T-05, FR-13)", () => {
+  const withSummary: Diagnosis = { ...result, llm: "ok", summary: { text: "Reiniciar o spooler costuma resolver.\nConfira a fila depois.", sourceIds: ["a-1"] } };
+
+  it("mostra o resumo rotulado como gerado, com aviso de que pode errar, e liga às fontes citadas", async () => {
+    await openAndRun(withSummary);
+    const aside = await panel();
+    const section = await within(aside).findByRole("region", { name: "Resumo gerado por IA" });
+    expect(within(section).getByText(/Reiniciar o spooler costuma resolver\./)).toBeTruthy();
+    expect(within(section).getByText(/pode conter erros/i)).toBeTruthy();
+    const link = within(section).getByRole("link", { name: "Impressora de rede não imprime" });
+    expect(link.getAttribute("href")).toBe("/base/a-1");
+    expect(within(section).queryByRole("link", { name: "Fila travada no setor 2" })).toBeNull();
+  });
+
+  it("liga chamado resolvido citado ao detalhe do chamado", async () => {
+    await openAndRun({ ...withSummary, summary: { text: "Veja o caso anterior.", sourceIds: ["t-7"] } });
+    const section = await within(await panel()).findByRole("region", { name: "Resumo gerado por IA" });
+    expect(within(section).getByRole("link", { name: "Fila travada no setor 2" }).getAttribute("href")).toBe("/chamados/t-7");
+  });
+
+  it("trata o texto do modelo como texto puro: nada é interpretado como HTML ou link", async () => {
+    const hostile = '<img src=x onerror="alert(1)"> [clique](https://exemplo.invalid) <a href="https://exemplo.invalid">aqui</a>';
+    await openAndRun({ ...withSummary, summary: { text: hostile, sourceIds: ["a-1"] } });
+    const section = await within(await panel()).findByRole("region", { name: "Resumo gerado por IA" });
+    expect(section.querySelector("img")).toBeNull();
+    expect(section.querySelector('a[href^="https://exemplo"]')).toBeNull();
+    expect(section.textContent).toContain(hostile);
+  });
+
+  it("ignora id citado que não está entre as fontes", async () => {
+    await openAndRun({ ...withSummary, summary: { text: "Resumo.", sourceIds: ["a-1", "zzz"] } });
+    const section = await within(await panel()).findByRole("region", { name: "Resumo gerado por IA" });
+    expect(within(section).getAllByRole("link")).toHaveLength(1);
+  });
+
+  it("sem modelo ligado não há seção de resumo nem aviso", async () => {
+    await openAndRun(result);
+    const aside = await panel();
+    await within(aside).findByRole("region", { name: "Fontes" });
+    expect(within(aside).queryByRole("region", { name: "Resumo gerado por IA" })).toBeNull();
+    expect(within(aside).queryByText(/resumo por modelo/i)).toBeNull();
+  });
+
+  it("modelo indisponível: avisa e mantém fontes e passos", async () => {
+    await openAndRun({ ...result, llm: "unavailable" });
+    const aside = await panel();
+    const warning = await within(aside).findByText(/resumo por modelo não está disponível/i);
+    expect(warning.getAttribute("role")).toBe("note");
+    expect(within(aside).getByRole("region", { name: "Fontes" })).toBeTruthy();
+    expect(within(aside).getByRole("list", { name: "Passos de Impressora de rede não imprime" })).toBeTruthy();
+    expect(within(aside).queryByRole("region", { name: "Resumo gerado por IA" })).toBeNull();
+  });
+
+  it("em abstenção não mostra resumo nem aviso do modelo", async () => {
+    await openAndRun({ ...result, abstained: true, evidence: null, sources: [], steps: [], llm: "off" });
+    const aside = await panel();
+    await within(aside).findByText("Evidência insuficiente");
+    expect(within(aside).queryByText(/resumo/i)).toBeNull();
   });
 });

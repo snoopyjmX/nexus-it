@@ -28,7 +28,7 @@ export async function seedUsers(pool: pg.Pool): Promise<void> {
   for (const user of Object.values(USERS)) await createUser(pool, hasher, { ...user, password: PASSWORD });
 }
 
-export type DiagnosisOptions = Pick<DiagnosisDeps, "thresholdTrusted" | "limits">;
+export type DiagnosisOptions = Pick<DiagnosisDeps, "thresholdTrusted" | "limits" | "summarizer">;
 
 export function buildApp(pool: pg.Pool, embeddings?: Embeddings, diagnosisOptions: DiagnosisOptions = {}) {
   const auth = createAuth({ pool, hasher, secureCookie: false });
