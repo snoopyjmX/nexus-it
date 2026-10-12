@@ -75,4 +75,19 @@ export interface SearchResponse {
 
 export type SearchStatus = { embeddings: { enabled: false } | { enabled: true; model: string; minScore: number; pending: { articles: number; tickets: number } } };
 
+// Resposta de POST /tickets/:id/diagnosis (ADR-011). Não há score: o servidor não o envia.
+export type DiagnosisSource =
+  | { kind: "article"; id: string; title: string; symptom: string; tags: string[] }
+  | { kind: "ticket"; id: string; title: string; summary: string };
+
+export interface Diagnosis {
+  runId: string;
+  mode: "vector" | "lexical";
+  degraded: boolean;
+  abstained: boolean;
+  evidence: "threshold" | "unverified" | null;
+  sources: DiagnosisSource[];
+  steps: { articleId: string; text: string }[];
+}
+
 export type { Role };

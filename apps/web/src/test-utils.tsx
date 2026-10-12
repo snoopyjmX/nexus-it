@@ -12,7 +12,7 @@ export interface Call {
 }
 
 type Reply = { status?: number; body?: unknown };
-type Handler = Reply | ((call: Call) => Reply);
+type Handler = Reply | ((call: Call) => Reply | Promise<Reply>);
 
 // `fetch` simulado: cada chave é "MÉTODO /caminho". Rota sem resposta falha o teste.
 export function mockApi(routes: Record<string, Handler>) {
@@ -31,7 +31,7 @@ export function mockApi(routes: Record<string, Handler>) {
       calls.push(call);
       const handler = routes[`${method} ${path.split("?")[0]}`];
       if (!handler) throw new Error(`rota não simulada: ${method} ${path}`);
-      const reply = typeof handler === "function" ? handler(call) : handler;
+      const reply = typeof handler === "function" ? await handler(call) : handler;
       const status = reply.status ?? 200;
       return new Response(status === 204 ? null : JSON.stringify(reply.body ?? {}), {
         status,
