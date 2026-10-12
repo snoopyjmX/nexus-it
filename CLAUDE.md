@@ -4,7 +4,7 @@ Ferramenta interna de suporte de TI (organização fictícia). Técnico abre um 
 Especificação única: @docs/PRD.md. Arquitetura e specs: @docs/ARCHITECTURE.md. Ameaças: docs/THREAT_MODEL.md.
 
 ## Fase atual
-Fase 1 (Fundação). NÃO implemente nada de fases futuras nem itens de "Fora do escopo" do PRD.
+Fase 2 (Chamados, KB, busca lexical; em andamento: chamados e política). NÃO implemente nada de fases futuras nem itens de "Fora do escopo" do PRD.
 
 ## Stack (não troque sem ADR)
 pnpm monorepo · apps/web: React + TS + Vite + Tailwind + TanStack Query · apps/api: Node LTS + TS + Express 5 + Zod · Postgres + pgvector via driver `pg` e SQL parametrizado · Vitest, Supertest, Playwright · Docker Compose · GitHub Actions.
