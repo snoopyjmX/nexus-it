@@ -4,11 +4,15 @@ import { createPasswordHasher } from "../../../apps/api/src/modules/auth/passwor
 import { createUser } from "../../../apps/api/src/modules/auth/users.js";
 import { backfill } from "../../../apps/api/src/modules/embeddings/backfill.js";
 import type { Embeddings } from "../../../apps/api/src/modules/embeddings/index.js";
+import { articleIdsForSteps, evidenceFor, SOURCES_MAX, toSources, toSteps, type Source } from "../../../apps/api/src/modules/diagnosis/service.js";
+import { articleProcedures } from "../../../apps/api/src/modules/diagnosis/store.js";
+import { PROMPT_VERSION, summarize, type SummaryProvider } from "../../../apps/api/src/modules/diagnosis/summary.js";
 import { insertArticle, updateArticle } from "../../../apps/api/src/modules/knowledge/store.js";
 import { searchKnowledge } from "../../../apps/api/src/modules/knowledge/search.js";
 import { migrate } from "../../../apps/api/src/db/migrate.js";
 import { insertTicket, updateTicket, type Category } from "../../../apps/api/src/modules/tickets/store.js";
 import type { Dataset, EvalDocument } from "./dataset.js";
+import { runGeneration, type GenerationCase, type PreparedCase } from "./generation.js";
 import { environmentInfo, RESULT_SCHEMA_VERSION, type EvalResult } from "./result.js";
 import { runSuite, type SearchFn } from "./suite.js";
 
@@ -24,6 +28,8 @@ export interface RunOptions {
   // Com embeddings roda também o modo vetorial; sem eles, só o lexical.
   embeddings?: Embeddings;
   nodeEnv?: string;
+  // Mede também o resumo do modelo (ADR-008), no modo de busca que o app usaria: vetorial com embeddings, senão lexical.
+  generation?: { provider: SummaryProvider; cases: GenerationCase[]; casesVersion: string; rounds: number };
 }
 
 function requireField(doc: EvalDocument, field: "ambiente" | "resultado"): string {
@@ -94,6 +100,63 @@ function searchFn(pool: pg.Pool, embeddings: Embeddings | undefined, technicianI
   };
 }
 
+// Monta, para cada caso, o mesmo contexto que o diagnóstico monta (fontes, passos, abstenção). Nos casos de injection o
+// documento plantado entra à força, como na Semana 0: sem isso o ataque pode nunca chegar ao modelo.
+async function prepareGenerationCases(
+  pool: pg.Pool,
+  embeddings: Embeddings | undefined,
+  technicianId: string,
+  dataset: Dataset,
+  corpusIds: Map<string, string>,
+  cases: GenerationCase[],
+): Promise<PreparedCase[]> {
+  const queries = new Map(dataset.queries.map((q) => [q.id, q]));
+  const docs = new Map(dataset.documents.map((d) => [d.id, d]));
+  const dbIdOf = new Map([...corpusIds].map(([dbId, corpusId]) => [corpusId, dbId]));
+
+  async function plantedSource(corpusId: string): Promise<Source> {
+    const dbId = dbIdOf.get(corpusId);
+    const doc = docs.get(corpusId);
+    if (!dbId || !doc) throw new Error(`Documento plantado fora do corpus: ${corpusId}`);
+    if (doc.tipo === "artigo") {
+      const { rows } = await pool.query<{ title: string; symptom: string }>("SELECT title, symptom FROM kb_articles WHERE id = $1", [dbId]);
+      return { kind: "article", id: dbId, title: rows[0]?.title ?? "", symptom: rows[0]?.symptom ?? "", tags: [] };
+    }
+    const { rows } = await pool.query<{ title: string; summary: string }>("SELECT title, left(description, 240) AS summary FROM tickets WHERE id = $1", [dbId]);
+    return { kind: "ticket", id: dbId, title: rows[0]?.title ?? "", summary: rows[0]?.summary ?? "" };
+  }
+
+  const prepared: PreparedCase[] = [];
+  for (const generationCase of cases) {
+    const query = queries.get(generationCase.consulta);
+    if (!query) throw new Error(`Caso cita consulta inexistente: ${generationCase.consulta}`);
+    const outcome = await searchKnowledge(pool, embeddings, { id: technicianId, role: "technician" }, query.texto, SOURCES_MAX + 1, { minScore: 0 });
+    let sources = toSources(outcome.items, "");
+    let plantedForced = false;
+    const planted = generationCase.documento_plantado;
+    if (planted && !sources.some((s) => corpusIds.get(s.id) === planted)) {
+      // Na 3ª posição: garante que esteja entre as 3 primeiras fontes, as únicas de que o diagnóstico extrai passos.
+      sources = [...sources.slice(0, 2), await plantedSource(planted), ...sources.slice(2, SOURCES_MAX - 1)];
+      plantedForced = true;
+    }
+    const evidence = evidenceFor(outcome, sources, false);
+    const stepArticles = articleIdsForSteps(sources);
+    const steps = toSteps(stepArticles, await articleProcedures(pool, stepArticles));
+    prepared.push({
+      caseId: query.id,
+      type: query.tipo,
+      expected: dataset.gold[query.id] ?? [],
+      contextIds: sources.map((s) => corpusIds.get(s.id) ?? s.id),
+      plantedForced,
+      abstained: evidence === null,
+      ...(generationCase.marcador ? { marker: generationCase.marcador } : {}),
+      input: { ticket: { title: query.texto, description: "" }, sources, steps },
+      sourceCorpusIds: corpusIds,
+    });
+  }
+  return prepared;
+}
+
 // Roda a suíte contra a busca real do app (o mesmo `searchKnowledge` das rotas) dentro de um schema temporário do
 // próprio banco: não apaga nem altera nenhuma tabela existente, e o schema é removido no fim, com ou sem erro.
 export async function runEvaluation(options: RunOptions): Promise<EvalResult[]> {
@@ -135,6 +198,26 @@ export async function runEvaluation(options: RunOptions): Promise<EvalResult[]> 
         suite,
       });
     }
+
+    const { generation } = options;
+    if (generation) {
+      const mode = embeddings ? "vector" : "lexical";
+      const target = results.find((r) => r.searchMode === mode);
+      if (!target) throw new Error("Sem resultado de busca para anexar a geração.");
+      const cases = await prepareGenerationCases(pool, embeddings, technicianId, dataset, corpusIds, generation.cases);
+      target.generation = await runGeneration({
+        cases,
+        rounds: generation.rounds,
+        model: generation.provider.model,
+        promptVersion: PROMPT_VERSION,
+        casesVersion: generation.casesVersion,
+        summarize: async (input) => {
+          const started = performance.now();
+          const outcome = await summarize(generation.provider, input);
+          return { outcome, ms: Math.round(performance.now() - started) };
+        },
+      });
+    }
     return results;
   } finally {
     await pool?.end();
@@ -145,9 +228,18 @@ export async function runEvaluation(options: RunOptions): Promise<EvalResult[]> 
 
 export async function saveResult(db: Pick<pg.Pool, "query">, result: EvalResult): Promise<string> {
   const { rows } = await db.query<{ id: string }>(
-    `INSERT INTO eval_runs (dataset_set, dataset_version, search_mode, embedding_model, environment, result)
-     VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb) RETURNING id`,
-    [result.set, result.datasetVersion, result.searchMode, result.embeddingModel, JSON.stringify(result.environment), JSON.stringify(result)],
+    `INSERT INTO eval_runs (dataset_set, dataset_version, search_mode, embedding_model, llm_model, prompt_version, environment, result)
+     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb) RETURNING id`,
+    [
+      result.set,
+      result.datasetVersion,
+      result.searchMode,
+      result.embeddingModel,
+      result.generation?.model ?? null,
+      result.generation?.promptVersion ?? null,
+      JSON.stringify(result.environment),
+      JSON.stringify(result),
+    ],
   );
   return rows[0]?.id as string;
 }

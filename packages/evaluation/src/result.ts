@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import os from "node:os";
+import type { GenerationResult } from "./generation.js";
 import type { SuiteSummary } from "./suite.js";
 
 export const RESULT_SCHEMA_VERSION = 1;
@@ -21,6 +22,8 @@ export interface EvalResult {
   embeddingModel: string | null;
   environment: Environment;
   suite: SuiteSummary;
+  // Só quando a execução mediu o resumo do modelo (pnpm eval --llm).
+  generation?: GenerationResult;
 }
 
 function commit(): string {

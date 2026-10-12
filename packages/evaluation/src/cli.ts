@@ -6,17 +6,24 @@ import { createPool } from "../../../apps/api/src/lib/db.js";
 import { createLogger } from "../../../apps/api/src/lib/logger.js";
 import type { Embeddings } from "../../../apps/api/src/modules/embeddings/index.js";
 import { createOllamaProvider } from "../../../apps/api/src/modules/embeddings/provider.js";
+import { createOllamaSummaryProvider } from "../../../apps/api/src/modules/diagnosis/summary-provider.js";
 import { DEV_DIR, TEST_DIR, loadDataset } from "./dataset.js";
+import { loadGenerationCases } from "./generation.js";
 import { formatReport } from "./report.js";
 import { runEvaluation, saveResult } from "./runner.js";
 
-// Uso: pnpm eval [--set dev|test]
+// Uso: pnpm eval [--set dev|test] [--llm [--rounds N]]
+// --llm mede também o resumo do modelo (ADR-008) com LLM_MODEL em OLLAMA_BASE_URL; --rounds padrão 3.
 // Usa DATABASE_URL (o banco precisa estar migrado) e, com EMBEDDINGS_ENABLED=true, roda também o modo vetorial.
 // O conjunto de teste só é lido; este código nunca escreve em dataset/.
-const setIndex = process.argv.indexOf("--set");
-const set = setIndex === -1 ? "dev" : process.argv[setIndex + 1];
-if (set !== "dev" && set !== "test") {
-  process.stderr.write("Uso: pnpm eval [--set dev|test]\n");
+const option = (name: string) => {
+  const i = process.argv.indexOf(`--${name}`);
+  return i === -1 ? undefined : process.argv[i + 1];
+};
+const set = option("set") ?? "dev";
+const rounds = Number(option("rounds") ?? 3);
+if ((set !== "dev" && set !== "test") || !Number.isInteger(rounds) || rounds < 1 || rounds > 10) {
+  process.stderr.write("Uso: pnpm eval [--set dev|test] [--llm [--rounds 1..10]]\n");
   process.exit(1);
 }
 
@@ -32,8 +39,19 @@ const embeddings: Embeddings | undefined = config.EMBEDDINGS_ENABLED
 
 const pool = createPool(config.DATABASE_URL);
 try {
-  const dataset = await loadDataset(set === "dev" ? DEV_DIR : TEST_DIR);
-  const results = await runEvaluation({ databaseUrl: config.DATABASE_URL, dataset, set, nodeEnv: config.NODE_ENV, ...(embeddings ? { embeddings } : {}) });
+  const dir = set === "dev" ? DEV_DIR : TEST_DIR;
+  const dataset = await loadDataset(dir);
+  let generation: Parameters<typeof runEvaluation>[0]["generation"];
+  if (process.argv.includes("--llm")) {
+    const loaded = await loadGenerationCases(dir, dataset);
+    generation = {
+      provider: createOllamaSummaryProvider({ baseUrl: config.OLLAMA_BASE_URL, model: config.LLM_MODEL, timeoutMs: config.LLM_TIMEOUT_MS }),
+      cases: loaded.cases,
+      casesVersion: loaded.version,
+      rounds,
+    };
+  }
+  const results = await runEvaluation({ databaseUrl: config.DATABASE_URL, dataset, set, nodeEnv: config.NODE_ENV, ...(embeddings ? { embeddings } : {}), ...(generation ? { generation } : {}) });
   const outDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "../results");
   await mkdir(outDir, { recursive: true });
   for (const result of results) {
