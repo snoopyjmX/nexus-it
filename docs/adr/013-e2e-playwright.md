@@ -24,4 +24,5 @@ A Fase 5 pede e2e (ARCHITECTURE §8). Os testes de componente (ADR-010) rodam se
 - `devDependency` nova de `apps/e2e`: não entra na imagem da API nem no `pnpm audit --prod`. O download do Chromium (cerca de 150 MB) acontece uma vez por máquina e por cache do CI.
 - O e2e e `pnpm test` compartilham o `nexus_test`: rodam em sequência, nunca em paralelo.
 - Cada teste que cria dados usa títulos únicos, para não depender de ordem.
+- CI (job `e2e` em `.github/workflows/ci.yml`): `playwright install --with-deps` usa apt e baixa o Chromium num runner efêmero, sem segredos e com token só de leitura. O resíduo de cadeia de suprimentos (pacotes apt sem pin) é risco aceito; a alternativa, a imagem oficial do Playwright fixada por digest, custa mais do que traz agora. Nenhum passo envia artefatos: se algum dia enviar, só o relatório, nunca `playwright/.auth` nem traces. `apps/api/test/ci-workflow.test.ts` falha se uma action deixar de ser fixada por SHA, se surgir `pull_request_target` ou se faltar `permissions: contents: read` (T-17).
 - Se o tempo de execução ou a manutenção virar problema, a troca fica isolada em `apps/e2e`.
