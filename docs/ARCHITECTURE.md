@@ -36,7 +36,7 @@ scripts/               seed, create-user, backup, restore
 | `ticket_events` | id, ticket_id, actor_id, event_type, payload, created_at | Append-only; payload em allow-list. |
 | `kb_articles` | id, title, symptom, environment, procedure, expected_result, status, version, author_id, embedding, embedding_model, created_at, updated_at | status ∈ {draft, published}. Editar publicado = republicar (versão +1). |
 | `kb_tags`, `kb_article_tags` | | |
-| `ai_runs` | id, ticket_id, user_id, mode, model, prompt_version, retrieved_ids, abstained, output, duration_ms, error, feedback, created_at | mode ∈ {deterministic, llm}. Sem contexto bruto. |
+| `ai_runs` | id, ticket_id, user_id, mode, search_mode, degraded, retrieved, abstained, evidence, duration_ms, feedback_useful, feedback_note, feedback_at, feedback_by, created_at | mode ∈ {deterministic, llm}; evidence ∈ {threshold, unverified}, nula quando abstém. Só ids e desfecho: nunca o texto do chamado, das fontes ou do contexto (ADR-011). Colunas do modo LLM (modelo, versão do prompt, erro) entram com a camada LLM. |
 
 **Busca lexical (FR-07):** coluna `search` gerada (`tsvector` com `portuguese` e `f_unaccent`; pesos título A, sintoma B, ambiente e procedimento C, resultado esperado D) e índice GIN. A consulta usa `plainto_tsquery` com os termos unidos por OU e ordena por `ts_rank_cd`, desempatando por id, porque o E da Semana 0 zerava as paráfrases. A resposta traz `mode: "lexical"`. Entram artigos publicados (qualquer papel) e chamados resolvidos ou fechados (solicitante: só os próprios; técnico: todos); reabrir tira o chamado da busca. Cada item traz `kind`. Os scores de artigo e de chamado vêm de colunas diferentes e só são comparáveis de forma aproximada.
 
@@ -78,7 +78,7 @@ Princípios: tudo sob `/api/v1`; escopo decidido pela sessão, nunca por parâme
 | `GET`/`POST /tickets/:id/comments` | Ambos | Segue a visibilidade do chamado |
 | `GET /tickets/:id/events` | Ambos | Segue o chamado; payload em allow-list |
 | `POST /tickets/:id/diagnosis` | Técnico | Rate limit; 1 execução simultânea por usuário |
-| `POST /diagnosis-runs/:id/feedback` | Técnico | — |
+| `POST /diagnosis-runs/:id/feedback` | Técnico | Corpo `{ useful, correction? }`; grava só na execução, nunca em artigo ou chamado |
 | `GET /articles`, `GET /articles/:id` | Ambos | Solicitante: só publicados; rascunho = 404 |
 | `POST /articles`, `PATCH /articles/:id` | Técnico | `version` obrigatório no PATCH |
 | `POST /articles/:id/publish`, `/unpublish` | Técnico | Recalcula/limpa embedding na mesma transação |
@@ -102,11 +102,11 @@ Implementação: um único módulo `src/policy/` usado pela listagem, pela busca
 
 ## 6. Diagnóstico (determinístico primeiro — ADR-002)
 
-1. Técnico pede diagnóstico; servidor checa sessão e papel.
-2. Consulta normalizada e limitada em tamanho.
-3. Busca top-K com escopo do técnico (artigos publicados + chamados resolvidos).
-4. Se o melhor score < limiar → abstenção ("evidência insuficiente"); fim, sem LLM.
-5. Painel determinístico: fontes ranqueadas com link + passos extraídos do `procedure` das fontes.
+1. Técnico pede diagnóstico; servidor checa sessão e papel. Limite de 10 por minuto e 1 em andamento por usuário (429).
+2. Consulta = título e descrição do chamado, espaços normalizados, no máximo 300 caracteres (ADR-011).
+3. Busca top-5 com escopo do técnico (artigos publicados + chamados resolvidos), a mesma de `GET /search`; o próprio chamado fica de fora.
+4. Busca vetorial com limiar confiável: nada a partir do limiar → abstenção ("evidência insuficiente"); fim, sem LLM. Busca por palavras (embeddings desligados ou fora do ar, com `degraded: true`) ou limiar não confiável (`DIAGNOSIS_THRESHOLD_TRUSTED=false`, o padrão até a recalibração do ADR-007): sem corte, fontes rotuladas "evidência não verificada"; sem nenhuma fonte, também abstém. A resposta nunca traz score.
+5. Painel determinístico: fontes ranqueadas com link + passos extraídos do `procedure` dos 3 primeiros artigos entre as fontes (chamados resolvidos são fontes, sem passos).
 6. Se o LLM estiver habilitado e disponível: contexto delimitado como dado não confiável, saída JSON validada por schema, IDs fora da lista descartados, texto renderizado como texto puro e rotulado "gerado".
 7. Grava `ai_runs` sem contexto bruto.
 

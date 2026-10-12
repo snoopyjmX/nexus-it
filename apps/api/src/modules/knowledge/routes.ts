@@ -7,7 +7,8 @@ import { can, type PolicyActor } from "../../policy/index.js";
 import type { Auth, AuthContext } from "../auth/index.js";
 import { articleText, embedOrNull, pendingCounts, type Embeddings } from "../embeddings/index.js";
 import type { Queryable } from "../tickets/store.js";
-import { findArticle, insertArticle, listArticles, search as runSearch, setTags, updateArticle, type Article } from "./store.js";
+import { searchKnowledge } from "./search.js";
+import { findArticle, insertArticle, listArticles, setTags, updateArticle, type Article } from "./store.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TAG = /^[a-z0-9][a-z0-9._-]{0,29}$/;
@@ -160,10 +161,8 @@ export function createKnowledgeRouters({ pool, auth, embeddings }: KnowledgeDeps
   search.use(auth.requireAuth);
   search.get("/", async (req, res) => {
     const { q, limit } = parse(searchSchema, req.query);
-    const vector = await embedOrNull(embeddings, q);
-    const items = await runSearch(pool, actorOf(res), q, limit, vector && embeddings ? { literal: vector.literal, minScore: embeddings.minScore } : undefined);
     // `degraded`: a busca semântica está ligada mas não respondeu; a tela avisa (FR-13).
-    res.json({ mode: vector ? "vector" : "lexical", degraded: embeddings !== undefined && !vector, items });
+    res.json(await searchKnowledge(pool, embeddings, actorOf(res), q, limit));
   });
 
   search.get("/status", technicianOnly, async (_req, res) => {

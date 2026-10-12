@@ -32,4 +32,10 @@ describe("loadConfig (inicialização falha cedo)", () => {
       expect(String(error)).not.toContain("SENHA_SECRETA");
     }
   });
+
+  it("DIAGNOSIS_THRESHOLD_TRUSTED vale false por padrão (limiar sem recalibração) e aceita só true ou false", () => {
+    expect(loadConfig(valid).DIAGNOSIS_THRESHOLD_TRUSTED).toBe(false);
+    expect(loadConfig({ ...valid, DIAGNOSIS_THRESHOLD_TRUSTED: "true" }).DIAGNOSIS_THRESHOLD_TRUSTED).toBe(true);
+    expect(() => loadConfig({ ...valid, DIAGNOSIS_THRESHOLD_TRUSTED: "talvez" })).toThrow(/DIAGNOSIS_THRESHOLD_TRUSTED/);
+  });
 });

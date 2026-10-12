@@ -10,3 +10,8 @@ export const ARTICLE_VISIBILITY = {
   rascunho: { requester: false, technician: true },
   publicado: { requester: true, technician: true },
 } as const;
+
+// ARCHITECTURE §5: execuções de diagnóstico são só do técnico (pedir e avaliar).
+export const DIAGNOSIS_VISIBILITY = {
+  execucoes: { requester: false, technician: true },
+} as const;

@@ -5,6 +5,7 @@ import { createLogger } from "./lib/logger.js";
 import { createAuth } from "./modules/auth/index.js";
 import type { Embeddings } from "./modules/embeddings/index.js";
 import { createOllamaProvider } from "./modules/embeddings/provider.js";
+import { createDiagnosisRouter } from "./modules/diagnosis/routes.js";
 import { createKnowledgeRouters } from "./modules/knowledge/routes.js";
 import { createTicketsRouter } from "./modules/tickets/routes.js";
 import { createPasswordHasher } from "./modules/auth/password.js";
@@ -26,6 +27,7 @@ const app = createApp({
   auth,
   tickets: createTicketsRouter({ pool, auth, ...(embeddings ? { embeddings } : {}) }),
   knowledge: createKnowledgeRouters({ pool, auth, ...(embeddings ? { embeddings } : {}) }),
+  diagnosis: createDiagnosisRouter({ pool, auth, thresholdTrusted: config.DIAGNOSIS_THRESHOLD_TRUSTED, ...(embeddings ? { embeddings } : {}) }),
 });
 
 const server = app.listen(config.PORT, () => {

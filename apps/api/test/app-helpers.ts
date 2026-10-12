@@ -6,6 +6,7 @@ import { createLogger } from "../src/lib/logger.js";
 import { createAuth } from "../src/modules/auth/index.js";
 import { createPasswordHasher } from "../src/modules/auth/password.js";
 import { createUser, type Role } from "../src/modules/auth/users.js";
+import { createDiagnosisRouter, type DiagnosisDeps } from "../src/modules/diagnosis/routes.js";
 import type { Embeddings } from "../src/modules/embeddings/index.js";
 import { createKnowledgeRouters } from "../src/modules/knowledge/routes.js";
 import { createTicketsRouter } from "../src/modules/tickets/routes.js";
@@ -27,11 +28,14 @@ export async function seedUsers(pool: pg.Pool): Promise<void> {
   for (const user of Object.values(USERS)) await createUser(pool, hasher, { ...user, password: PASSWORD });
 }
 
-export function buildApp(pool: pg.Pool, embeddings?: Embeddings) {
+export type DiagnosisOptions = Pick<DiagnosisDeps, "thresholdTrusted" | "limits">;
+
+export function buildApp(pool: pg.Pool, embeddings?: Embeddings, diagnosisOptions: DiagnosisOptions = {}) {
   const auth = createAuth({ pool, hasher, secureCookie: false });
   const extra = embeddings ? { embeddings } : {};
   const tickets = createTicketsRouter({ pool, auth, ...extra });
-  return createApp({ db: createDatabase(pool), logger: createLogger("silent"), auth, tickets, knowledge: createKnowledgeRouters({ pool, auth, ...extra }) });
+  const diagnosis = createDiagnosisRouter({ pool, auth, ...extra, ...diagnosisOptions });
+  return createApp({ db: createDatabase(pool), logger: createLogger("silent"), auth, tickets, knowledge: createKnowledgeRouters({ pool, auth, ...extra }), diagnosis });
 }
 
 export type App = ReturnType<typeof buildApp>;

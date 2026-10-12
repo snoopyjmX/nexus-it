@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { can, scopeArticlesFor, scopeTicketsFor } from "../src/policy/index.js";
-import { ARTICLE_VISIBILITY, TICKET_VISIBILITY } from "../src/policy/visibility-matrix.js";
+import { ARTICLE_VISIBILITY, DIAGNOSIS_VISIBILITY, TICKET_VISIBILITY } from "../src/policy/visibility-matrix.js";
 
 const tech = { id: "t1", role: "technician" as const };
 const ana = { id: "r1", role: "requester" as const };
@@ -70,6 +70,25 @@ describe("política da base de conhecimento (FR-06, FR-15)", () => {
     for (const [state, row] of Object.entries(ARTICLE_VISIBILITY)) {
       for (const [viewer, visible] of Object.entries(row)) {
         expect(can(viewers[viewer as keyof typeof viewers], "article:read", states[state as keyof typeof states]), `${state} / ${viewer}`).toBe(visible);
+      }
+    }
+  });
+});
+
+describe("política do diagnóstico (FR-02, FR-09, FR-11)", () => {
+  it("só técnico pede diagnóstico e avalia a execução", () => {
+    for (const action of ["diagnosis:run", "diagnosis:feedback"] as const) {
+      expect(can(tech, action), action).toBe(true);
+      expect(can(ana, action), action).toBe(false);
+    }
+  });
+
+  it("a matriz de visibilidade concorda com can() para cada célula", () => {
+    const viewers = { requester: ana, technician: tech };
+    for (const [resource, row] of Object.entries(DIAGNOSIS_VISIBILITY)) {
+      for (const [viewer, visible] of Object.entries(row)) {
+        expect(can(viewers[viewer as keyof typeof viewers], "diagnosis:run"), `${resource} / ${viewer}`).toBe(visible);
+        expect(can(viewers[viewer as keyof typeof viewers], "diagnosis:feedback"), `${resource} / ${viewer}`).toBe(visible);
       }
     }
   });

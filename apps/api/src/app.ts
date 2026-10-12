@@ -13,6 +13,8 @@ interface AppDeps {
   auth?: Auth;
   tickets?: Router;
   knowledge?: { articles: Router; search: Router };
+  // Rotas completas sob /api/v1 (/tickets/:id/diagnosis e /diagnosis-runs/...).
+  diagnosis?: Router;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -55,12 +57,14 @@ function requestLog(logger: Logger): RequestHandler {
   };
 }
 
-export function createApp({ db, logger, auth, tickets, knowledge }: AppDeps) {
+export function createApp({ db, logger, auth, tickets, knowledge, diagnosis }: AppDeps) {
   const app = express();
   app.disable("x-powered-by");
   app.use(securityHeaders, requestId, requestLog(logger), rejectCrossOrigin);
   app.use(express.json({ limit: "100kb" }));
   if (auth) app.use("/api/v1/auth", auth.router);
+  // Antes do roteador de chamados: /tickets/:id/diagnosis é tratada aqui, com a autenticação da própria rota.
+  if (diagnosis) app.use("/api/v1", diagnosis);
   if (tickets) app.use("/api/v1/tickets", tickets);
   if (knowledge) {
     app.use("/api/v1/articles", knowledge.articles);
