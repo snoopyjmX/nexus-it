@@ -117,9 +117,17 @@ const COLUMNS: Record<keyof ArticleFields, string> = {
   expectedResult: "expected_result",
 };
 
-export async function updateArticle(db: Queryable, id: string, changes: { [K in keyof ArticleFields]?: string | undefined } & { status?: ArticleStatus | undefined }): Promise<void> {
+type ArticleChanges = { [K in keyof ArticleFields]?: string | undefined } & {
+  status?: ArticleStatus | undefined;
+  embedding?: string | null | undefined;
+  embedding_model?: string | null | undefined;
+};
+
+const OTHER_COLUMNS = new Set(["status", "embedding", "embedding_model"]);
+
+export async function updateArticle(db: Queryable, id: string, changes: ArticleChanges): Promise<void> {
   const entries = Object.entries(changes).filter(([, value]) => value !== undefined);
-  const sets = entries.map(([key], i) => `${key === "status" ? "status" : COLUMNS[key as keyof ArticleFields]} = $${i + 2}`);
+  const sets = entries.map(([key], i) => `${OTHER_COLUMNS.has(key) ? key : COLUMNS[key as keyof ArticleFields]} = $${i + 2}${key === "embedding" ? "::vector" : ""}`);
   await db.query(`UPDATE kb_articles SET ${[...sets, "version = version + 1", "updated_at = now()"].join(", ")} WHERE id = $1`, [id, ...entries.map(([, value]) => value)]);
 }
 
@@ -164,8 +172,43 @@ async function searchTicketHits(db: Queryable, actor: PolicyActor, q: string, li
   return rows.map((row) => ({ kind: "ticket", ...row }));
 }
 
+export interface VectorQuery {
+  literal: string;
+  minScore: number;
+}
+
+// Vetorial (ADR-007): score = similaridade de cosseno (1 - distância), busca exata. Linhas sem vetor
+// (Ollama fora do ar na hora de publicar) ficam de fora até o backfill. O filtro de status e o
+// escopo do papel estão na própria consulta.
+async function searchArticleVectors(db: Queryable, vector: VectorQuery, limit: number): Promise<SearchHit[]> {
+  const { rows } = await db.query<{ id: string; title: string; symptom: string; tags: string[]; score: number }>(
+    `SELECT a.id, a.title, a.symptom, ${TAGS} AS tags, (1 - (a.embedding <=> $1::vector))::float8 AS score
+       FROM kb_articles a
+      WHERE ${SEARCHABLE_ARTICLES} AND a.embedding IS NOT NULL AND (1 - (a.embedding <=> $1::vector)) >= $3
+      ORDER BY a.embedding <=> $1::vector, a.id
+      LIMIT $2`,
+    [vector.literal, limit, vector.minScore],
+  );
+  return rows.map((row) => ({ kind: "article", ...row }));
+}
+
+async function searchTicketVectors(db: Queryable, actor: PolicyActor, vector: VectorQuery, limit: number): Promise<SearchHit[]> {
+  const scope = scopeTicketsFor(actor, 4);
+  const { rows } = await db.query<{ id: string; title: string; summary: string; score: number }>(
+    `SELECT t.id, t.title, left(t.description, 240) AS summary, (1 - (t.embedding <=> $1::vector))::float8 AS score
+       FROM tickets t
+      WHERE ${SEARCHABLE_TICKET_STATUSES} AND ${scope.clause} AND t.embedding IS NOT NULL AND (1 - (t.embedding <=> $1::vector)) >= $3
+      ORDER BY t.embedding <=> $1::vector, t.id
+      LIMIT $2`,
+    [vector.literal, limit, vector.minScore, ...scope.params],
+  );
+  return rows.map((row) => ({ kind: "ticket", ...row }));
+}
+
 // Os scores de artigo e de chamado vêm de colunas diferentes e só são comparáveis de forma aproximada.
-export async function search(db: Queryable, actor: PolicyActor, q: string, limit: number): Promise<SearchHit[]> {
-  const hits = [...(await searchArticleHits(db, q, limit)), ...(await searchTicketHits(db, actor, q, limit))];
-  return hits.sort((a, b) => b.score - a.score || a.kind.localeCompare(b.kind) || a.id.localeCompare(b.id)).slice(0, limit);
+export async function search(db: Queryable, actor: PolicyActor, q: string, limit: number, vector?: VectorQuery): Promise<SearchHit[]> {
+  const [articles, tickets] = vector
+    ? [await searchArticleVectors(db, vector, limit), await searchTicketVectors(db, actor, vector, limit)]
+    : [await searchArticleHits(db, q, limit), await searchTicketHits(db, actor, q, limit)];
+  return [...articles, ...tickets].sort((a, b) => b.score - a.score || a.kind.localeCompare(b.kind) || a.id.localeCompare(b.id)).slice(0, limit);
 }

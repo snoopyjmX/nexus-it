@@ -10,7 +10,8 @@
     "test": "vitest run",
     "db:migrate": "tsx src/db/migrate-cli.ts",
     "db:seed": "tsx src/cli/seed-cli.ts",
-    "user:create": "tsx src/cli/create-user-cli.ts"
+    "user:create": "tsx src/cli/create-user-cli.ts",
+    "embeddings:backfill": "tsx src/cli/backfill-cli.ts"
   },
   "devDependencies": {
     "@types/express": "5.0.6",

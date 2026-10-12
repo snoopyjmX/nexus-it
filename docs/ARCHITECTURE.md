@@ -40,6 +40,8 @@ scripts/               seed, create-user, backup, restore
 
 **Busca lexical (FR-07):** coluna `search` gerada (`tsvector` com `portuguese` e `f_unaccent`; pesos título A, sintoma B, ambiente e procedimento C, resultado esperado D) e índice GIN. A consulta usa `plainto_tsquery` com os termos unidos por OU e ordena por `ts_rank_cd`, desempatando por id, porque o E da Semana 0 zerava as paráfrases. A resposta traz `mode: "lexical"`. Entram artigos publicados (qualquer papel) e chamados resolvidos ou fechados (solicitante: só os próprios; técnico: todos); reabrir tira o chamado da busca. Cada item traz `kind`. Os scores de artigo e de chamado vêm de colunas diferentes e só são comparáveis de forma aproximada.
 
+**Busca vetorial (ADR-007, `EMBEDDINGS_ENABLED=true`):** bge-m3 (1024 dimensões), cosseno exato sem índice ANN; `score = 1 − distância`, cortado em `VECTOR_MIN_SCORE`. A resposta traz `mode: "vector"`. O embedding é calculado antes da transação; se o Ollama estiver fora do ar, publicar/resolver grava vetor NULL, a busca cai para lexical (`mode: "lexical"`, `degraded: true`) e `GET /search/status` (técnico) conta os vetores pendentes. `pnpm embeddings:backfill` preenche os que faltam. CHECKs no banco garantem FR-15: vetor só em artigo publicado e chamado resolvido/fechado, e `embedding`/`embedding_model` sempre juntos ou ambos NULL.
+
 **Sem tabela de chunks (ADR-001):** 1 artigo = 1 vetor na própria linha. A busca filtra `status = 'published'` (artigos) ou `status IN ('resolved','closed')` (chamados) na mesma query, então despublicar exclui por construção. O embedding é recalculado na transação que publica/resolve.
 
 `version` em `tickets` e `kb_articles` implementa concorrência otimista: PATCH sem a versão atual → 409.

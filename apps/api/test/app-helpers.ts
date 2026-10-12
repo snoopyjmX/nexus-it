@@ -6,6 +6,7 @@ import { createLogger } from "../src/lib/logger.js";
 import { createAuth } from "../src/modules/auth/index.js";
 import { createPasswordHasher } from "../src/modules/auth/password.js";
 import { createUser, type Role } from "../src/modules/auth/users.js";
+import type { Embeddings } from "../src/modules/embeddings/index.js";
 import { createKnowledgeRouters } from "../src/modules/knowledge/routes.js";
 import { createTicketsRouter } from "../src/modules/tickets/routes.js";
 
@@ -26,10 +27,11 @@ export async function seedUsers(pool: pg.Pool): Promise<void> {
   for (const user of Object.values(USERS)) await createUser(pool, hasher, { ...user, password: PASSWORD });
 }
 
-export function buildApp(pool: pg.Pool) {
+export function buildApp(pool: pg.Pool, embeddings?: Embeddings) {
   const auth = createAuth({ pool, hasher, secureCookie: false });
-  const tickets = createTicketsRouter({ pool, auth });
-  return createApp({ db: createDatabase(pool), logger: createLogger("silent"), auth, tickets, knowledge: createKnowledgeRouters({ pool, auth }) });
+  const extra = embeddings ? { embeddings } : {};
+  const tickets = createTicketsRouter({ pool, auth, ...extra });
+  return createApp({ db: createDatabase(pool), logger: createLogger("silent"), auth, tickets, knowledge: createKnowledgeRouters({ pool, auth, ...extra }) });
 }
 
 export type App = ReturnType<typeof buildApp>;

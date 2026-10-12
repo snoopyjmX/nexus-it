@@ -5,6 +5,7 @@ import { decodeCursor, encodeCursor } from "../../lib/cursor.js";
 import { HttpError } from "../../lib/errors.js";
 import { can, type PolicyActor } from "../../policy/index.js";
 import type { Auth, AuthContext } from "../auth/index.js";
+import { embedOrNull, ticketText, type Embeddings } from "../embeddings/index.js";
 import {
   CATEGORIES,
   PRIORITIES,
@@ -71,9 +72,10 @@ function present({ requesterId: _r, assigneeId: _a, ...ticket }: Ticket) {
 export interface TicketsDeps {
   pool: pg.Pool;
   auth: Auth;
+  embeddings?: Embeddings;
 }
 
-export function createTicketsRouter({ pool, auth }: TicketsDeps) {
+export function createTicketsRouter({ pool, auth, embeddings }: TicketsDeps) {
   const router = Router();
   router.use(auth.requireAuth);
   const csrf: RequestHandler = auth.requireCsrf;
@@ -175,6 +177,12 @@ export function createTicketsRouter({ pool, auth }: TicketsDeps) {
     const id = ticketId(req);
     const input = parse(transitionSchema, req.body);
 
+    // Ao resolver, o vetor sai antes da transação (ADR-007). A checagem pura vem antes para que quem
+    // não pode resolver não gaste chamadas ao modelo.
+    const before = await visible(pool, actor, id, "ticket:read");
+    const planned = checkTransition(actor, before, input);
+    const vector = planned.ok && input.to === "resolved" ? await embedOrNull(embeddings, ticketText({ ...before, resolutionNote: planned.resolutionNote })) : null;
+
     const updated = await inTransaction(async (db) => {
       const ticket = await visible(db, actor, id, "ticket:read", true);
       const result = checkTransition(actor, ticket, input);
@@ -186,8 +194,19 @@ export function createTicketsRouter({ pool, auth }: TicketsDeps) {
         changes.assignee_id = result.assigneeId;
       }
       if (result.resolutionNote !== undefined) changes.resolution_note = result.resolutionNote;
-      if (input.to === "resolved") changes.resolved_at = new Date();
-      if (ticket.status === "resolved" && input.to === "in_progress") changes.resolved_at = null;
+      if (input.to === "resolved") {
+        changes.resolved_at = new Date();
+        // Se o chamado mudou entre a leitura e a transação, o vetor pode estar velho: fica sem, e o backfill refaz.
+        const usable = ticket.version === before.version && vector;
+        changes.embedding = usable ? vector.literal : null;
+        changes.embedding_model = usable ? vector.model : null;
+      }
+      if (ticket.status === "resolved" && input.to === "in_progress") {
+        changes.resolved_at = null;
+        // Reabrir tira o chamado da busca: o banco recusa vetor em chamado que não está resolvido ou fechado (FR-15).
+        changes.embedding = null;
+        changes.embedding_model = null;
+      }
 
       await updateTicket(db, id, changes);
       await insertEvent(db, id, actor.id, { type: "transitioned", from: ticket.status, to: input.to });

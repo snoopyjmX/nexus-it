@@ -14,7 +14,8 @@
     "dev:api": "pnpm --filter @nexus/api dev",
     "dev:web": "pnpm --filter @nexus/web dev",
     "db:seed": "pnpm --filter @nexus/api db:seed",
-    "user:create": "pnpm --filter @nexus/api user:create"
+    "user:create": "pnpm --filter @nexus/api user:create",
+    "embeddings:backfill": "pnpm --filter @nexus/api embeddings:backfill"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

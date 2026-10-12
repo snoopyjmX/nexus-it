@@ -6,6 +6,13 @@ const schema = z.object({
   DATABASE_URL: z
     .string()
     .regex(/^postgres(ql)?:\/\//, "deve começar com postgres:// ou postgresql://"),
+  // Busca vetorial (ADR-007). Desligada por padrão: sem Ollama tudo funciona só com a busca por palavras.
+  EMBEDDINGS_ENABLED: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
+  OLLAMA_BASE_URL: z.string().url().default("http://127.0.0.1:11434"),
+  EMBEDDING_MODEL: z.string().min(1).default("bge-m3"),
+  EMBEDDING_TIMEOUT_MS: z.coerce.number().int().min(100).max(120_000).default(15_000),
+  // Limiar medido na Semana 0 (ADR-007); ponto de partida, recalibrar na base real.
+  VECTOR_MIN_SCORE: z.coerce.number().min(0).max(1).default(0.5393),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
 });
 
