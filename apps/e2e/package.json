@@ -1,0 +1,13 @@
+{
+  "name": "@nexus/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "tsx": "4.23.15"
+  }
+}
