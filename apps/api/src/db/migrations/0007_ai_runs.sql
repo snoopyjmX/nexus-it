@@ -15,10 +15,12 @@ CREATE TABLE ai_runs (
   feedback_useful boolean,
   feedback_note text CHECK (feedback_note IS NULL OR char_length(feedback_note) BETWEEN 1 AND 1000),
   feedback_at timestamptz,
+  -- Quem avaliou pode ser outro técnico que não o que pediu; a última avaliação substitui a anterior.
+  feedback_by uuid REFERENCES users (id),
   created_at timestamptz NOT NULL DEFAULT now(),
   -- Abstenção não tem evidência; resposta tem.
   CONSTRAINT ai_runs_abstained_evidence CHECK (abstained = (evidence IS NULL)),
-  CONSTRAINT ai_runs_feedback_pair CHECK ((feedback_useful IS NULL) = (feedback_at IS NULL)),
+  CONSTRAINT ai_runs_feedback_pair CHECK ((feedback_useful IS NULL) = (feedback_at IS NULL) AND (feedback_useful IS NULL) = (feedback_by IS NULL)),
   CONSTRAINT ai_runs_note_needs_feedback CHECK (feedback_note IS NULL OR feedback_useful IS NOT NULL)
 );
 

@@ -35,10 +35,10 @@ export interface Feedback {
 }
 
 // O feedback só grava na execução: não toca em artigo nem em chamado (FR-11). Devolve null se a execução não existe.
-export async function setFeedback(db: Queryable, runId: string, feedback: Feedback): Promise<Feedback | null> {
+export async function setFeedback(db: Queryable, runId: string, userId: string, feedback: Feedback): Promise<Feedback | null> {
   const { rows } = await db.query<{ feedback_useful: boolean; feedback_note: string | null }>(
-    "UPDATE ai_runs SET feedback_useful = $2, feedback_note = $3, feedback_at = now() WHERE id = $1 RETURNING feedback_useful, feedback_note",
-    [runId, feedback.useful, feedback.correction],
+    "UPDATE ai_runs SET feedback_useful = $2, feedback_note = $3, feedback_by = $4, feedback_at = now() WHERE id = $1 RETURNING feedback_useful, feedback_note",
+    [runId, feedback.useful, feedback.correction, userId],
   );
   return rows[0] ? { useful: rows[0].feedback_useful, correction: rows[0].feedback_note } : null;
 }

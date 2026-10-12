@@ -106,6 +106,23 @@ describe("acesso ao diagnóstico (FR-02, T-02)", () => {
   });
 });
 
+describe("montagem das rotas no app completo", () => {
+  it("o roteador do diagnóstico não intercepta /health nem exige sessão fora das suas rotas", async () => {
+    await start();
+    expect((await request(app).get("/api/v1/health/live")).status).toBe(200);
+    expect((await request(app).get("/api/v1/health/ready")).status).toBe(200);
+    expect((await request(app).get("/api/v1/rota-inexistente")).status).toBe(404);
+    expect((await request(app).get("/api/v1/tickets")).status).toBe(401);
+  });
+
+  it("o diagnóstico só aceita POST: GET nas duas rotas é 404, não 401 nem 405 com dados", async () => {
+    await start();
+    const id = await newTicket();
+    expect((await api(app, tecnico).get(`/tickets/${id}/diagnosis`)).status).toBe(404);
+    expect((await api(app, tecnico).get(`/diagnosis-runs/${randomUUID()}/feedback`)).status).toBe(404);
+  });
+});
+
 describe("fontes e passos (FR-09)", () => {
   it("devolve artigo e chamado resolvido como fontes clicáveis, sem nenhum score", async () => {
     await start();
@@ -238,8 +255,18 @@ describe("leitura dos procedimentos (T-15)", () => {
 });
 
 describe("abstenção por limiar (FR-10) e degradação (FR-13)", () => {
-  it("busca vetorial acima do limiar: fontes com evidência 'threshold'", async () => {
+  it("por padrão o limiar não é confiável: busca vetorial sai como 'não verificada' e sem corte", async () => {
     await start({ embeddings: true });
+    const article = await publishedArticle();
+    const related = await diagnose(await newTicket());
+    expect(related.body).toMatchObject({ mode: "vector", abstained: false, evidence: "unverified" });
+    const unrelated = await diagnose(await newTicket(ana, { title: "Café derramado no teclado", description: "Líquido entrou nas teclas." }));
+    expect(unrelated.body).toMatchObject({ mode: "vector", abstained: false, evidence: "unverified" });
+    expect(sourceIds(unrelated.body)).toEqual([article]);
+  });
+
+  it("limiar confiável e busca vetorial acima do limiar: fontes com evidência 'threshold'", async () => {
+    await start({ embeddings: true, diagnosis: { thresholdTrusted: true } });
     const article = await publishedArticle();
     const res = await diagnose(await newTicket());
     expect(res.body).toMatchObject({ mode: "vector", degraded: false, abstained: false, evidence: "threshold" });
@@ -247,8 +274,8 @@ describe("abstenção por limiar (FR-10) e degradação (FR-13)", () => {
     expect(res.body.steps).toHaveLength(3);
   });
 
-  it("nada acima do limiar: abstém, sem fontes nem passos", async () => {
-    await start({ embeddings: true });
+  it("limiar confiável e nada acima dele: abstém, sem fontes nem passos", async () => {
+    await start({ embeddings: true, diagnosis: { thresholdTrusted: true } });
     await publishedArticle();
     const res = await diagnose(await newTicket(ana, { title: "Café derramado no teclado", description: "Líquido entrou nas teclas." }));
     expect(res.status).toBe(201);
@@ -265,7 +292,7 @@ describe("abstenção por limiar (FR-10) e degradação (FR-13)", () => {
   });
 
   it("Ollama fora do ar: cai para palavras, avisa degradação e rotula 'não verificada'", async () => {
-    await start({ embeddings: true });
+    await start({ embeddings: true, diagnosis: { thresholdTrusted: true } });
     const article = await publishedArticle();
     provider.down = true;
     const res = await diagnose(await newTicket());
@@ -369,7 +396,7 @@ describe("feedback (FR-11)", () => {
     expect(res.status).toBe(201);
     return String(res.body.runId);
   }
-  const feedbackOf = async (runId: string) => (await pool.query("SELECT feedback_useful, feedback_note, feedback_at FROM ai_runs WHERE id = $1", [runId])).rows[0];
+  const feedbackOf = async (runId: string) => (await pool.query("SELECT feedback_useful, feedback_note, feedback_at, feedback_by FROM ai_runs WHERE id = $1", [runId])).rows[0];
 
   it("técnico marca útil e registra a correção", async () => {
     await start();
@@ -378,7 +405,7 @@ describe("feedback (FR-11)", () => {
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body).toEqual({ useful: false, correction: "A causa era o cabo, não o spooler." });
     const row = await feedbackOf(runId);
-    expect(row).toMatchObject({ feedback_useful: false, feedback_note: "A causa era o cabo, não o spooler." });
+    expect(row).toMatchObject({ feedback_useful: false, feedback_note: "A causa era o cabo, não o spooler.", feedback_by: tecnico.id });
     expect(row.feedback_at).toBeInstanceOf(Date);
   });
 
@@ -393,10 +420,12 @@ describe("feedback (FR-11)", () => {
     expect(await feedbackOf(runId)).toMatchObject({ feedback_useful: true, feedback_note: null });
   });
 
-  it("outro técnico também pode avaliar a execução", async () => {
+  it("outro técnico também pode avaliar, e o registro guarda quem avaliou por último", async () => {
     await start();
     const runId = await run();
+    await api(app, tecnico).post(`/diagnosis-runs/${runId}/feedback`, { useful: false, correction: "Era o cabo." });
     expect((await api(app, tecnico2).post(`/diagnosis-runs/${runId}/feedback`, { useful: true })).status).toBe(200);
+    expect(await feedbackOf(runId)).toMatchObject({ feedback_useful: true, feedback_note: null, feedback_by: tecnico2.id });
   });
 
   it("exige sessão e CSRF; solicitante recebe 403", async () => {
@@ -467,5 +496,6 @@ describe("tabela ai_runs (restrições do banco)", () => {
   it("recusa feedback pela metade: voto sem data ou data sem voto", async () => {
     await expect(insert({ feedback_useful: true })).rejects.toMatchObject({ code: "23514" });
     await expect(insert({ feedback_at: new Date() })).rejects.toMatchObject({ code: "23514" });
+    await expect(insert({ feedback_useful: true, feedback_at: new Date() })).rejects.toMatchObject({ code: "23514" });
   });
 });

@@ -4,7 +4,7 @@ Ferramenta interna de suporte de TI (organização fictícia). Técnico abre um 
 Especificação única: @docs/PRD.md. Arquitetura e specs: @docs/ARCHITECTURE.md. Ameaças: docs/THREAT_MODEL.md.
 
 ## Fase atual
-Fase 2 (Chamados, KB, busca lexical) entregue. Fase 3 em andamento: infraestrutura vetorial entregue (desligada por padrão); faltam telas de busca, avaliação no conjunto teste e recalibração do limiar. NÃO implemente nada de fases futuras nem itens de "Fora do escopo" do PRD.
+Fases 1 e 2 entregues. Fase 3: busca vetorial, telas de busca e infraestrutura entregues (vetorial desligada por padrão); faltam o conjunto de teste congelado (só o autor escreve), a avaliação nele e a recalibração do limiar. Em 2026-10-12 o autor autorizou seguir para as fases seguintes sem esperar esses itens: Fase 4 em andamento (diagnóstico determinístico no PR do ADR-011; LLM opcional e laboratório a seguir) e depois Fase 5. Enquanto a recalibração não for registrada, `DIAGNOSIS_THRESHOLD_TRUSTED` fica `false`. NÃO implemente itens de "Fora do escopo" do PRD. NUNCA escreva em `packages/evaluation/dataset/test/` nem invente consultas, corpus ou gold.
 
 ## Stack (não troque sem ADR)
 pnpm monorepo · apps/web: React + TS + Vite + Tailwind + TanStack Query · apps/api: Node LTS + TS + Express 5 + Zod · Postgres + pgvector via driver `pg` e SQL parametrizado · Vitest, Supertest, Playwright · Docker Compose · GitHub Actions.

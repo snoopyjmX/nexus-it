@@ -34,14 +34,14 @@ export interface DiagnosisDeps {
   pool: pg.Pool;
   auth: Auth;
   embeddings?: Embeddings;
-  // Padrão true (ADR-011). false força "evidência não verificada" mesmo com busca vetorial (FR-10).
+  // Padrão false (ADR-011, ADR-007): sem a recalibração registrada, "evidência não verificada" mesmo com busca vetorial (FR-10).
   thresholdTrusted?: boolean;
   limits?: { max: number; windowMs: number };
 }
 
 // Monta as rotas direto em /api/v1 (o diagnóstico mora em /tickets/:id e em /diagnosis-runs), por isso a
 // autenticação é por rota, e não um router.use que alcançaria também /health.
-export function createDiagnosisRouter({ pool, auth, embeddings, thresholdTrusted = true, limits = { max: 10, windowMs: 60_000 } }: DiagnosisDeps) {
+export function createDiagnosisRouter({ pool, auth, embeddings, thresholdTrusted = false, limits = { max: 10, windowMs: 60_000 } }: DiagnosisDeps) {
   const router = Router();
   const csrf: RequestHandler = auth.requireCsrf;
   const limiter = createRateLimiter(limits);
@@ -85,10 +85,11 @@ export function createDiagnosisRouter({ pool, auth, embeddings, thresholdTrusted
   });
 
   router.post("/diagnosis-runs/:id/feedback", auth.requireAuth, csrf, async (req, res) => {
-    if (!can(actorOf(res), "diagnosis:feedback")) throw new HttpError(403, "Somente técnicos avaliam o diagnóstico.");
+    const actor = actorOf(res);
+    if (!can(actor, "diagnosis:feedback")) throw new HttpError(403, "Somente técnicos avaliam o diagnóstico.");
     const id = uuidParam(req);
     const { useful, correction } = parse(feedbackSchema, req.body);
-    const saved = await setFeedback(pool, id, { useful, correction: correction ?? null });
+    const saved = await setFeedback(pool, id, actor.id, { useful, correction: correction ?? null });
     if (!saved) throw new HttpError(404);
     res.json(saved);
   });

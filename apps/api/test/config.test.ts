@@ -33,9 +33,9 @@ describe("loadConfig (inicialização falha cedo)", () => {
     }
   });
 
-  it("DIAGNOSIS_THRESHOLD_TRUSTED vale true por padrão e aceita só true ou false", () => {
-    expect(loadConfig(valid).DIAGNOSIS_THRESHOLD_TRUSTED).toBe(true);
-    expect(loadConfig({ ...valid, DIAGNOSIS_THRESHOLD_TRUSTED: "false" }).DIAGNOSIS_THRESHOLD_TRUSTED).toBe(false);
+  it("DIAGNOSIS_THRESHOLD_TRUSTED vale false por padrão (limiar sem recalibração) e aceita só true ou false", () => {
+    expect(loadConfig(valid).DIAGNOSIS_THRESHOLD_TRUSTED).toBe(false);
+    expect(loadConfig({ ...valid, DIAGNOSIS_THRESHOLD_TRUSTED: "true" }).DIAGNOSIS_THRESHOLD_TRUSTED).toBe(true);
     expect(() => loadConfig({ ...valid, DIAGNOSIS_THRESHOLD_TRUSTED: "talvez" })).toThrow(/DIAGNOSIS_THRESHOLD_TRUSTED/);
   });
 });
