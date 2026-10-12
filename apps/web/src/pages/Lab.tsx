@@ -261,7 +261,7 @@ export function Lab() {
                   <td className="py-1 pr-4">{run.searchMode}{run.embeddingModel ? ` (${run.embeddingModel})` : ""}</td>
                   <td className="py-1 pr-4">{run.llmModel ? `${run.llmModel} · ${run.promptVersion}` : "—"}</td>
                   <td className="py-1">
-                    <Button type="button" aria-label={`Ver detalhes da execução de ${formatDate(run.createdAt)}`} aria-pressed={selected?.id === run.id} disabled={selected?.id === run.id} onClick={() => setSelectedId(run.id)}>
+                    <Button type="button" className="aria-pressed:bg-blue-950" aria-label={`Ver detalhes da execução de ${formatDate(run.createdAt)}`} aria-pressed={selected?.id === run.id} onClick={() => setSelectedId(run.id)}>
                       Ver detalhes
                     </Button>
                   </td>

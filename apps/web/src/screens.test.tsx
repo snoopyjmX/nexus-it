@@ -443,7 +443,7 @@ describe("base de conhecimento", () => {
     expect((await screen.findByRole("link", { name: "Monitor sem sinal" })).getAttribute("href")).toBe("/chamados/t-7");
     expect(screen.getByRole("link", { name: article.title }).getAttribute("href")).toBe("/base/a-1");
     expect(screen.getByText("Chamado resolvido")).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toContain("2 resultado(s)");
+    expect(screen.getByRole("status").textContent).toContain("2 resultados");
     expect(calls.find((c) => c.path.startsWith("/search"))?.path).toBe("/search?q=impressora%20%26%20rede");
   });
 
