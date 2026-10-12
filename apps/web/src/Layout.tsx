@@ -15,11 +15,18 @@ export function Layout() {
   if (loading) return <p role="status" className="p-6">Carregando…</p>;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
 
+  const demo = import.meta.env.VITE_DEMO === "true";
+
   return (
     <>
       <a href="#conteudo" className={`sr-only focus:not-sr-only focus:absolute focus:m-2 focus:bg-white focus:p-2 ${focusRing}`}>
         Pular para o conteúdo
       </a>
+      {demo && (
+        <p role="note" className="border-b border-amber-700 bg-amber-50 px-4 py-2 text-center text-amber-950">
+          Demonstração com respostas <strong>gravadas</strong> de uma execução local, com dados sintéticos. Nada aqui é ao vivo e as ações de escrita estão desligadas.
+        </p>
+      )}
       <header className="border-b border-slate-300 bg-white">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-4 p-4">
           <NavLink to="/" className={`text-lg font-semibold ${focusRing}`}>
@@ -34,9 +41,11 @@ export function Layout() {
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <span>{user.displayName}</span>
-            <Button variant="secondary" type="button" onClick={() => void logout()}>
-              Sair
-            </Button>
+            {!demo && (
+              <Button variant="secondary" type="button" onClick={() => void logout()}>
+                Sair
+              </Button>
+            )}
           </div>
         </div>
       </header>

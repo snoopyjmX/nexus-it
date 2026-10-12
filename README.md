@@ -49,6 +49,8 @@ Mais comandos:
 pnpm exec playwright install chromium    # uma vez; baixa o navegador do e2e
 pnpm test:e2e                            # fluxos críticos no navegador (apaga o schema do nexus_test)
 pnpm eval [--set dev] [--llm]            # suíte de avaliação (ADR-012); --llm precisa do Ollama
+pnpm demo:record                         # regrava as respostas da demonstração (apaga o schema do nexus_test)
+pnpm build:demo                          # gera a demonstração estática em apps/web/dist-demo
 scripts/backup.sh                        # dump em backups/ (fora do Git)
 scripts/restore.sh <dump> <banco-novo>   # só restaura em banco novo; nunca sobrescreve (docs/RUNBOOK.md)
 docker compose --profile app build && docker compose --profile app run --rm api node dist/db/migrate-cli.js && docker compose --profile app up -d   # API em container
@@ -77,7 +79,7 @@ Conjunto **dev** de 30 consultas. A mesma IA (Claude) escreveu consultas, corpus
 - Não existe ainda o conjunto de **teste** congelado: todos os números acima são do conjunto de desenvolvimento e são exploratórios.
 - O resumo por modelo está desligado por não ter passado no tempo. Os critérios de segurança b e c do T-05 (ação fora do procedimento, ação destrutiva citada como evidência) exigem leitura humana dos resumos, ainda não feita.
 - Dados 100% sintéticos, uma única organização fictícia, sem integrações. Os itens fora do escopo estão no PRD.
-- Não há demo pública nem vídeo neste momento. A demo estática (ADR-003) e o vídeo ainda não foram feitos.
+- A demonstração estática (ADR-003) existe como build (`pnpm build:demo`, em `apps/web/dist-demo`), mas **não está publicada em nenhum endereço**: publicar é decisão do autor. Ela serve respostas gravadas, não é ao vivo, e mostra o diagnóstico com a busca por palavras: as fontes aparecem como "evidência não verificada", sem resumo do modelo e sem exemplo de abstenção (com busca por palavras o app só se abstém quando não há nenhuma fonte). O vídeo não foi feito.
 - A CI inclui e2e, Trivy e CodeQL, mas esses jobs ainda não tiveram a primeira execução no GitHub.
 
 ## Segurança e operação

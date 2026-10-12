@@ -1,7 +1,9 @@
 node_modules/
 dist/
+dist-demo/
 coverage/
 playwright-report/
+**/playwright/.auth/
 test-results/
 .env
 .env.*

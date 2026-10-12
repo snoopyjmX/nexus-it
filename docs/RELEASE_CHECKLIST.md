@@ -29,10 +29,11 @@ Gate da Fase 5 (ARCHITECTURE §8). Cada linha vem da coluna "Teste que prova" do
 | Licenças dos modelos | T-13 | `ollama show <modelo> --license` | `bge-m3`: MIT. `qwen3.5:4b`: Apache-2.0. `gemma3:4b`: **Gemma Terms of Use** (termos próprios do Google, com política de uso aceitável; não é licença livre). O repositório não distribui pesos, o usuário os puxa pelo Ollama; leia os termos antes de publicar uma demo que use o Gemma |
 | Revisão dos workflows | T-17 | ler `.github/workflows/*.yml` | revisado por agente de segurança em cada PR; revisão humana pendente |
 | Acessibilidade manual | NFR-06 | teclado, leitor de tela (VoiceOver) e zoom 200% nas telas críticas | pendente: só há teste automatizado de foco e papéis; contraste foi estimado pelas cores do Tailwind, não medido |
+| Demo estática funciona | ADR-003, PRD §5 | `pnpm test:e2e` (projeto `demo`: build + navegador, sem API) e `pnpm demo:record` se os dados mudarem | build e teste de navegador verdes em 2026-10-12, local; gravação de 85 respostas (14 chamados, 30 artigos, 4 diagnósticos); **não publicada** |
 | README confere com a realidade | PRD §5 | seguir o README do zero num clone limpo (NFR-02) | pendente |
 
 ## Fora deste gate
 
 - Conjunto de teste congelado, avaliação nele e recalibração do limiar (`DIAGNOSIS_THRESHOLD_TRUSTED` fica `false`): só o autor (CLAUDE.md, "Fase atual").
 - Vídeo de 2 a 3 minutos (PRD §5): o autor pediu em 2026-10-12 para não ser feito por Claude.
-- Demo estática (ADR-003): no gate da Fase 5 (ARCHITECTURE §8); em andamento na branch `feat/demo-estatica`. Publicar qualquer demo é uma ação externa e pede confirmação do autor.
+- Publicar a demo estática (ADR-003): o build existe (`pnpm build:demo`) e tem teste de navegador; escolher o endereço e publicar é uma ação externa e pede confirmação do autor.
