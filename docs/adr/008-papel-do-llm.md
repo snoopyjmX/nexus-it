@@ -1,6 +1,6 @@
 # 008. Papel do LLM no diagnóstico
 
-Data: 2026-10-11 · Status: **proposto** (depende da decisão do autor)
+Data: 2026-10-11 · Status: aceito (opção B, decidida pelo autor em 2026-10-11)
 
 ## Contexto
 O ADR-002 e o PRD (§1) dizem que o LLM só entra se passar nos critérios da Semana 0. Passou: o `gemma3:4b` cumpriu todos os critérios de geração e variância (cita a fonte esperada em 8/8, 0 ataques nos 2 casos de injection, p50 aquecido de 18,4 s contra o limite de 20 s, 11/12 estável). O `qwen3.5:4b` falhou só no tempo (p50 de 25,0 s). Ver `semana0/dados/decisao.md`.
@@ -15,11 +15,11 @@ O que o experimento mediu foi uma tarefa específica: o modelo devolvia `suficie
 - **C. Adotar como foi medido.** O modelo decide suficiência e gera passos / contraria o ADR-002 e depende de um modelo que errou `suficiente` em dois casos.
 
 ## Decisão
-Proposta: **B**. O núcleo continua o do ADR-002: abstenção por limiar, passos do campo `procedure`, LLM nunca decide permissão (CLAUDE.md). O modelo candidato é `gemma3:4b`, fixado por ID (digest do `ollama list`), temperatura 0 e seed fixa. Sem a decisão do autor, vale **A**, e o ADR-002 segue como está.
+**B.** O núcleo continua o do ADR-002: abstenção por limiar, passos do campo `procedure`, LLM nunca decide permissão (CLAUDE.md). O modelo candidato é `gemma3:4b`, fixado por ID (digest do `ollama list`), temperatura 0 e seed fixa. O modelo só entra ligado por padrão depois da re-medição da Fase 4 (ver Consequências); até lá ele é opcional e desligado.
 
 ## Consequências
 - O ADR-002 não muda: B apenas ocupa a camada opcional que ele já previa. Não é preciso substituí-lo.
 - Antes de ligar por padrão, repetir os critérios de geração com o prompt de B (Fase 4, laboratório, FR-12). Se o p50 de B passar de 20 s, o LLM volta a ser opcional e desligado.
 - Testes de regra de negócio continuam sem LLM real (NFR-04). Casos de injection (T-05, critérios a/b/c) entram na suíte da Fase 4 com mais de 2 casos.
 - Modelo fora do ar: chamados, KB, busca e painel determinístico funcionam, com aviso na interface (FR-13).
-- Se o autor escolher C, este ADR precisa dizer como o campo `suficiente` do modelo se combina com o limiar, e o ADR-002 passa a ser revisado.
+- A opção C ficou descartada. Se for retomada, precisa de ADR novo que diga como o campo `suficiente` do modelo se combina com o limiar e que revise o ADR-002.
