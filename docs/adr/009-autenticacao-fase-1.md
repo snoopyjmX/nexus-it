@@ -35,4 +35,4 @@ O ADR-004 define sessão em cookie com store em Postgres e CSRF sincronizador. O
 - Argon2id por dependência nativa custaria um módulo C++/Rust na imagem Alpine, mais superfície de ataque e de build (T-09), para um ganho que o OWASP não exige: o Cheat Sheet aceita scrypt com N=2^17/r=8/p=1 ou equivalente, e N=2^16/r=8/p=2 tem custo de memória e tempo comparável (64 MiB, ~0,4 s).
 - Trocar o runtime para Node 24 só por isso mexe em Dockerfile, CI e máquina de quem desenvolve, sem ganho no problema real (senhas de um sistema interno de demonstração).
 - O risco da escolha é baixo e reversível: o formato do hash carrega os parâmetros e o algoritmo, e `needsRehash` já refaz o hash no login. Quando o Node 24 for o runtime, trocar para `crypto.argon2` é uma mudança contida no módulo de senha.
-- Pendência técnica: remedir o custo do scrypt no Mac do autor e, se passar de 500 ms, baixar N para 2^15 (registrar aqui).
+- Pendência técnica: remedir o custo do scrypt no Mac do autor com `pnpm auth:bench` e, se a mediana passar de 500 ms, baixar N para 2^15 (registrar aqui). Medido neste ambiente de desenvolvimento (2 vCPU Xeon 2,1 GHz): mediana de 393 ms.

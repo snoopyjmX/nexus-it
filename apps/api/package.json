@@ -11,7 +11,8 @@
     "db:migrate": "tsx src/db/migrate-cli.ts",
     "db:seed": "tsx src/cli/seed-cli.ts",
     "user:create": "tsx src/cli/create-user-cli.ts",
-    "embeddings:backfill": "tsx src/cli/backfill-cli.ts"
+    "embeddings:backfill": "tsx src/cli/backfill-cli.ts",
+    "auth:bench": "tsx src/cli/bench-password.ts"
   },
   "devDependencies": {
     "@types/express": "5.0.6",
