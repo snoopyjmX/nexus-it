@@ -21,3 +21,26 @@ export function ErrorMessage({ children }: { children: ReactNode }) {
     </p>
   );
 }
+
+export function Badge({ children }: { children: ReactNode }) {
+  return <span className="rounded border border-slate-500 bg-slate-100 px-2 py-0.5 text-sm text-slate-900">{children}</span>;
+}
+
+export function Field({ label, id, children }: { label: string; id: string; children: ReactNode }) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1 block font-medium">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+export function Loading() {
+  return (
+    <p role="status" className="text-slate-700">
+      Carregando…
+    </p>
+  );
+}

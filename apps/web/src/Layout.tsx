@@ -2,6 +2,11 @@ import { Navigate, NavLink, Outlet, useLocation } from "react-router";
 import { useAuth } from "./auth";
 import { Button, focusRing } from "./ui";
 
+const NAV = (role: string): [string, string][] => [
+  ["/chamados", role === "technician" ? "Fila" : "Meus chamados"],
+  ["/base", "Base de conhecimento"],
+];
+
 export function Layout() {
   const { user, loading, logout } = useAuth();
   const location = useLocation();
@@ -19,7 +24,13 @@ export function Layout() {
           <NavLink to="/" className={`text-lg font-semibold ${focusRing}`}>
             NEXUS IT
           </NavLink>
-          <nav aria-label="Principal" className="flex gap-4" />
+          <nav aria-label="Principal" className="flex gap-4">
+            {NAV(user.role).map(([to, label]) => (
+              <NavLink key={to} to={to} className={({ isActive }) => `underline-offset-4 ${isActive ? "font-semibold underline" : ""} ${focusRing}`}>
+                {label}
+              </NavLink>
+            ))}
+          </nav>
           <div className="ml-auto flex items-center gap-3">
             <span>{user.displayName}</span>
             <Button type="button" onClick={() => void logout()}>
