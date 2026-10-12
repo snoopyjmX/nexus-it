@@ -22,11 +22,14 @@ Busca vetorial com `bge-m3` via Ollama (1024 dimensões) e pgvector, 1 documento
 - A margem do limiar é fina: o menor score de uma consulta respondível foi 0,5542 e o maior de uma sem-resposta foi 0,5603, ambas as faixas se sobrepondo. Sem recalibração na base real, o limiar não é confiável. Se continuar sem separar, vale o ADR-002: fontes rotuladas "evidência não verificada", sem porcentagem.
 - A consulta vetorial filtra status e escopo do papel na própria query (T-06, T-15, FR-15).
 
-## Em aberto (precisa de decisão antes da Fase 3)
-Vetorizar depende do Ollama, que pode estar fora do ar (FR-13, T-12). O ADR-001 diz que o embedding é recalculado na transação que publica o artigo, e uma chamada HTTP lenta dentro de uma transação segura conexão do banco e falha junto com o modelo. Proposta, que muda a letra do ADR-001 e por isso não está aceita aqui:
+## Indisponibilidade do Ollama (decidido em 2026-10-11)
+Vetorizar depende do Ollama, que pode estar fora do ar (FR-13, T-12). O ADR-001 diz que o embedding é recalculado na transação que publica o artigo, mas uma chamada HTTP lenta dentro de uma transação segura a conexão do banco e falha junto com o modelo. Decisão (altera a letra do ADR-001 só nesse ponto):
 
-1. Calcular o embedding antes de abrir a transação.
-2. Se o Ollama estiver indisponível, publicar mesmo assim com `embedding` nulo. A busca vetorial ignora linhas sem vetor, e um comando de backfill recalcula depois.
-3. Se não for possível vetorizar a consulta, a busca cai para a lexical e a interface avisa.
+1. O embedding é calculado **antes** de abrir a transação, com timeout curto.
+2. Se o Ollama estiver indisponível, a publicação segue com `embedding` nulo e `embedding_model` nulo. A busca vetorial ignora linhas sem vetor.
+3. Um comando de backfill (`pnpm embeddings:backfill`) recalcula os nulos. A API mostra ao técnico quantos artigos publicados estão sem vetor, para a falha não ser silenciosa.
+4. Se a consulta não puder ser vetorizada, a busca cai para a lexical e a resposta informa o modo usado (`mode: "lexical"`), para a interface avisar.
+
+**Por que não falhar a publicação:** o técnico não deveria ficar impedido de publicar uma correção por causa de um componente auxiliar. O custo é um intervalo em que o artigo existe só na busca lexical, e isso fica visível (contagem e aviso). **Por que não vetorizar dentro da transação:** segura a conexão e acopla a disponibilidade do banco à do modelo.
 
 Despublicar continua excluindo da busca por construção, porque o filtro de status está na mesma linha.

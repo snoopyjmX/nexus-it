@@ -1,6 +1,6 @@
 # 009. Autenticação da Fase 1: scrypt, CSRF derivado e rate limit em memória
 
-Data: 2026-10-11 · Status: proposto (decidido durante a implementação, por delegação do autor; confirmar ou trocar a senha por Argon2id)
+Data: 2026-10-11 · Status: aceito em 2026-10-11 (autor delegou a decisão a Claude após análise; revisitar se o runtime passar para Node 24 ou se houver mais de uma instância)
 
 ## Contexto
 O ADR-004 define sessão em cookie com store em Postgres e CSRF sincronizador. O THREAT_MODEL pede Argon2id, rate limit por IP e por conta e login com mensagem genérica e tempo uniforme. Três pontos não estavam fechados:
@@ -30,3 +30,9 @@ O ADR-004 define sessão em cookie com store em Postgres e CSRF sincronizador. O
 - O limite por conta permite que alguém bloqueie o login de outra pessoa por 15 minutos com 5 tentativas erradas. É a troca aceita por não deixar adivinhação de senha ilimitada.
 - Os contadores somem se a API reiniciar e não valem para mais de uma instância. Com várias instâncias, mover para o Postgres exige ADR novo.
 - Se o autor preferir Argon2id, a mudança fica contida no módulo de senha e na migração de hashes no login.
+
+## Análise da decisão (2026-10-11)
+- Argon2id por dependência nativa custaria um módulo C++/Rust na imagem Alpine, mais superfície de ataque e de build (T-09), para um ganho que o OWASP não exige: o Cheat Sheet aceita scrypt com N=2^17/r=8/p=1 ou equivalente, e N=2^16/r=8/p=2 tem custo de memória e tempo comparável (64 MiB, ~0,4 s).
+- Trocar o runtime para Node 24 só por isso mexe em Dockerfile, CI e máquina de quem desenvolve, sem ganho no problema real (senhas de um sistema interno de demonstração).
+- O risco da escolha é baixo e reversível: o formato do hash carrega os parâmetros e o algoritmo, e `needsRehash` já refaz o hash no login. Quando o Node 24 for o runtime, trocar para `crypto.argon2` é uma mudança contida no módulo de senha.
+- Pendência técnica: remedir o custo do scrypt no Mac do autor e, se passar de 500 ms, baixar N para 2^15 (registrar aqui).
