@@ -38,7 +38,7 @@ scripts/               seed, create-user, backup, restore
 | `kb_tags`, `kb_article_tags` | | |
 | `ai_runs` | id, ticket_id, user_id, mode, model, prompt_version, retrieved_ids, abstained, output, duration_ms, error, feedback, created_at | mode ∈ {deterministic, llm}. Sem contexto bruto. |
 
-**Busca lexical (FR-07):** coluna `search` gerada (`tsvector` com `portuguese` e `f_unaccent`; pesos título A, sintoma B, ambiente e procedimento C, resultado esperado D) e índice GIN. A consulta usa `plainto_tsquery` com os termos unidos por OU e ordena por `ts_rank_cd`, desempatando por id, porque o E da Semana 0 zerava as paráfrases. A resposta traz `mode: "lexical"`. Só artigos publicados entram, para qualquer papel. Busca em chamados resolvidos ainda não existe.
+**Busca lexical (FR-07):** coluna `search` gerada (`tsvector` com `portuguese` e `f_unaccent`; pesos título A, sintoma B, ambiente e procedimento C, resultado esperado D) e índice GIN. A consulta usa `plainto_tsquery` com os termos unidos por OU e ordena por `ts_rank_cd`, desempatando por id, porque o E da Semana 0 zerava as paráfrases. A resposta traz `mode: "lexical"`. Entram artigos publicados (qualquer papel) e chamados resolvidos ou fechados (solicitante: só os próprios; técnico: todos); reabrir tira o chamado da busca. Cada item traz `kind`. Os scores de artigo e de chamado vêm de colunas diferentes e só são comparáveis de forma aproximada.
 
 **Sem tabela de chunks (ADR-001):** 1 artigo = 1 vetor na própria linha. A busca filtra `status = 'published'` (artigos) ou `status IN ('resolved','closed')` (chamados) na mesma query, então despublicar exclui por construção. O embedding é recalculado na transação que publica/resolve.
 

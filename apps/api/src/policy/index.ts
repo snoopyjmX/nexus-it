@@ -45,3 +45,6 @@ export function scopeArticlesFor(actor: PolicyActor): string {
 // Busca e contexto de diagnóstico só veem o que está publicado, para qualquer papel
 // (matriz de visibilidade, ARCHITECTURE §5; FR-15).
 export const SEARCHABLE_ARTICLES = "a.status = 'published'";
+
+// Chamados só entram na busca (e no contexto do diagnóstico) depois de resolvidos; reabrir tira da busca.
+export const SEARCHABLE_TICKET_STATUSES = "t.status IN ('resolved', 'closed')";

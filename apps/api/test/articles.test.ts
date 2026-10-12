@@ -200,7 +200,7 @@ describe("listagem com escopo do servidor (FR-06)", () => {
 
 describe("busca lexical (FR-07, FR-15)", () => {
   const search = (s: Session, q: string, extra = "") => api(app, s).get(`/search?q=${encodeURIComponent(q)}${extra}`);
-  const titles = (res: request.Response) => (res.body.items as { title: string }[]).map((i) => i.title);
+  const titles = (res: request.Response) => (res.body.items as { kind: string; title: string }[]).filter((i) => i.kind === "article").map((i) => i.title);
 
   async function corpus() {
     const printer = await createArticle();
@@ -217,7 +217,7 @@ describe("busca lexical (FR-07, FR-15)", () => {
     expect(res.status).toBe(200);
     expect(res.body.mode).toBe("lexical");
     expect(titles(res)[0]).toBe(ARTICLE.title);
-    expect(res.body.items[0]).toMatchObject({ symptom: ARTICLE.symptom, tags: ["impressora", "rede"] });
+    expect(res.body.items[0]).toMatchObject({ kind: "article", symptom: ARTICLE.symptom, tags: ["impressora", "rede"] });
     expect(res.body.items[0].score).toBeGreaterThan(0);
   });
 
@@ -274,5 +274,62 @@ describe("busca lexical (FR-07, FR-15)", () => {
     for (const qs of ["", "?q=", "?q=%20%20", `?q=${"a".repeat(201)}`, "?q=a&limit=0", "?q=a&limit=21", "?q=a&x=1"]) {
       expect((await api(app, ana).get(`/search${qs}`)).status, qs).toBe(400);
     }
+  });
+});
+
+describe("busca em chamados resolvidos (FR-07, FR-15, matriz §5)", () => {
+  const NEW = { title: "Monitor sem sinal", description: "O monitor externo fica preto ao ligar o notebook.", category: "hardware" };
+  const search = (s: Session, q: string) => api(app, s).get(`/search?q=${encodeURIComponent(q)}`);
+  const ticketTitles = (res: request.Response) => (res.body.items as { kind: string; title: string }[]).filter((i) => i.kind === "ticket").map((i) => i.title);
+
+  async function solved(owner: Session, body: object = {}, closeIt = false): Promise<string> {
+    const created = await api(app, owner).post("/tickets", { ...NEW, ...body });
+    const id = String(created.body.id);
+    const t = api(app, tecnico);
+    await t.post(`/tickets/${id}/transitions`, { to: "in_progress" });
+    await t.post(`/tickets/${id}/transitions`, { to: "resolved", resolutionNote: "Cabo HDMI trocado e resolução ajustada." });
+    if (closeIt) await t.post(`/tickets/${id}/transitions`, { to: "closed" });
+    return id;
+  }
+
+  it("cada item diz de que tipo é", async () => {
+    await createArticle().then(publish);
+    await solved(ana);
+    const kinds = (await search(tecnico, "monitor impressora")).body.items.map((i: { kind: string }) => i.kind).sort();
+    expect(kinds).toEqual(["article", "ticket"]);
+  });
+
+  it("solicitante acha só o próprio chamado resolvido; o de outro não aparece", async () => {
+    await solved(ana);
+    const bia = await loginAs(app, "bia");
+    expect(ticketTitles(await search(ana, "monitor sinal"))).toEqual(["Monitor sem sinal"]);
+    expect(ticketTitles(await search(bia, "monitor sinal"))).toEqual([]);
+  });
+
+  it("técnico acha chamados resolvidos e fechados de qualquer dono", async () => {
+    await solved(ana, { title: "Monitor sem sinal A" });
+    await solved(await loginAs(app, "bia"), { title: "Monitor sem sinal B" }, true);
+    expect(ticketTitles(await search(tecnico, "monitor sinal")).sort()).toEqual(["Monitor sem sinal A", "Monitor sem sinal B"]);
+  });
+
+  it("chamado aberto, em andamento ou cancelado nunca aparece", async () => {
+    await api(app, ana).post("/tickets", NEW);
+    const inProgress = String((await api(app, ana).post("/tickets", { ...NEW, title: "Monitor em andamento" })).body.id);
+    await api(app, tecnico).post(`/tickets/${inProgress}/transitions`, { to: "in_progress" });
+    const cancelled = String((await api(app, ana).post("/tickets", { ...NEW, title: "Monitor cancelado" })).body.id);
+    await api(app, ana).post(`/tickets/${cancelled}/transitions`, { to: "cancelled" });
+    expect(ticketTitles(await search(tecnico, "monitor"))).toEqual([]);
+  });
+
+  it("reabrir tira o chamado da busca (FR-15)", async () => {
+    const id = await solved(ana);
+    expect(ticketTitles(await search(tecnico, "monitor"))).toHaveLength(1);
+    await api(app, ana).post(`/tickets/${id}/transitions`, { to: "in_progress", comment: "Voltou a falhar." });
+    expect(ticketTitles(await search(tecnico, "monitor"))).toEqual([]);
+  });
+
+  it("acha pela nota de resolução, sem acento", async () => {
+    await solved(ana);
+    expect(ticketTitles(await search(ana, "RESOLUCAO hdmi"))).toEqual(["Monitor sem sinal"]);
   });
 });

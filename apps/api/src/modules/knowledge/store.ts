@@ -1,5 +1,5 @@
 import type { Cursor } from "../../lib/cursor.js";
-import { SEARCHABLE_ARTICLES, scopeArticlesFor, type PolicyActor } from "../../policy/index.js";
+import { SEARCHABLE_ARTICLES, SEARCHABLE_TICKET_STATUSES, scopeArticlesFor, scopeTicketsFor, type PolicyActor } from "../../policy/index.js";
 import type { Queryable } from "../tickets/store.js";
 
 export type ArticleStatus = "draft" | "published";
@@ -130,26 +130,42 @@ export async function setTags(db: Queryable, articleId: string, tags: string[]):
   await db.query("INSERT INTO kb_article_tags (article_id, tag_id) SELECT $1, id FROM kb_tags WHERE name = ANY($2::text[])", [articleId, tags]);
 }
 
-export interface SearchHit {
-  id: string;
-  title: string;
-  symptom: string;
-  tags: string[];
-  score: number;
-}
+export type SearchHit =
+  | { kind: "article"; id: string; title: string; symptom: string; tags: string[]; score: number }
+  | { kind: "ticket"; id: string; title: string; summary: string; score: number };
 
 // Baseline lexical (FR-07). O `plainto_tsquery` junta os termos com AND, o que zerava as
 // paráfrases na Semana 0; aqui o AND vira OR e o ts_rank_cd ordena por quantos termos casam.
-// O desempate por id deixa o resultado reproduzível.
-export async function searchArticles(db: Queryable, q: string, limit: number): Promise<SearchHit[]> {
+// O desempate por tipo e id deixa o resultado reproduzível.
+const QUERY = "LATERAL (SELECT replace(plainto_tsquery('portuguese', f_unaccent($1))::text, ' & ', ' | ')::tsquery AS q) query";
+
+async function searchArticleHits(db: Queryable, q: string, limit: number): Promise<SearchHit[]> {
   const { rows } = await db.query<{ id: string; title: string; symptom: string; tags: string[]; score: number }>(
     `SELECT a.id, a.title, a.symptom, ${TAGS} AS tags, ts_rank_cd(a.search, query.q)::float8 AS score
-       FROM kb_articles a,
-            LATERAL (SELECT replace(plainto_tsquery('portuguese', f_unaccent($1))::text, ' & ', ' | ')::tsquery AS q) query
+       FROM kb_articles a, ${QUERY}
       WHERE ${SEARCHABLE_ARTICLES} AND a.search @@ query.q
       ORDER BY score DESC, a.id
       LIMIT $2`,
     [q, limit],
   );
-  return rows;
+  return rows.map((row) => ({ kind: "article", ...row }));
+}
+
+async function searchTicketHits(db: Queryable, actor: PolicyActor, q: string, limit: number): Promise<SearchHit[]> {
+  const scope = scopeTicketsFor(actor, 3);
+  const { rows } = await db.query<{ id: string; title: string; summary: string; score: number }>(
+    `SELECT t.id, t.title, left(t.description, 240) AS summary, ts_rank_cd(t.search, query.q)::float8 AS score
+       FROM tickets t, ${QUERY}
+      WHERE ${SEARCHABLE_TICKET_STATUSES} AND ${scope.clause} AND t.search @@ query.q
+      ORDER BY score DESC, t.id
+      LIMIT $2`,
+    [q, limit, ...scope.params],
+  );
+  return rows.map((row) => ({ kind: "ticket", ...row }));
+}
+
+// Os scores de artigo e de chamado vêm de colunas diferentes e só são comparáveis de forma aproximada.
+export async function search(db: Queryable, actor: PolicyActor, q: string, limit: number): Promise<SearchHit[]> {
+  const hits = [...(await searchArticleHits(db, q, limit)), ...(await searchTicketHits(db, actor, q, limit))];
+  return hits.sort((a, b) => b.score - a.score || a.kind.localeCompare(b.kind) || a.id.localeCompare(b.id)).slice(0, limit);
 }
