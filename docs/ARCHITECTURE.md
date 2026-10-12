@@ -13,7 +13,7 @@ apps/api               Express 5 + TS + Zod
   src/policy/          can(), scopeTicketsFor(), scopeArticlesFor()  ← único lugar de autorização
   src/lib/             db, logger, errors (problem+json), config (Zod no boot)
 packages/contracts     schemas Zod compartilhados — entra na Fase 2, com o primeiro DTO real
-packages/evaluation    dataset/dev, dataset/test (congelado), métricas, runner CLI
+packages/evaluation    dataset/dev, dataset/test (congelado), métricas, runner CLI (ADR-012)
 infra/                 Dockerfiles, compose
 docs/                  PRD, ARCHITECTURE, THREAT_MODEL, AI_EVALUATION, SEMANA0, RUNBOOK, adr/
 scripts/               seed, create-user, backup, restore
@@ -37,6 +37,7 @@ scripts/               seed, create-user, backup, restore
 | `kb_articles` | id, title, symptom, environment, procedure, expected_result, status, version, author_id, embedding, embedding_model, created_at, updated_at | status ∈ {draft, published}. Editar publicado = republicar (versão +1). |
 | `kb_tags`, `kb_article_tags` | | |
 | `ai_runs` | id, ticket_id, user_id, mode, search_mode, degraded, retrieved, abstained, evidence, duration_ms, feedback_useful, feedback_note, feedback_at, feedback_by, llm_model, llm_prompt_version, llm_outcome, llm_discarded_citations, created_at | mode ∈ {deterministic, llm}; evidence ∈ {threshold, unverified}, nula quando abstém. Só ids e desfecho: nunca o texto do chamado, das fontes ou do contexto (ADR-011). Colunas do modo LLM: modelo, versão do prompt, desfecho (ok, provider_error, invalid_output, uncited) e citações descartadas; o texto do resumo não é gravado. mode = llm só quando o resumo foi mostrado. |
+| `eval_runs` | id, created_at, dataset_set, dataset_version, search_mode, embedding_model, llm_model, prompt_version, environment, result | Só o runner (`pnpm eval`) grava; a API só lê. dataset_version = hash de 12 hexadecimais dos arquivos do conjunto; vector exige embedding_model; llm_model e prompt_version vêm em par (ADR-012). |
 
 **Busca lexical (FR-07):** coluna `search` gerada (`tsvector` com `portuguese` e `f_unaccent`; pesos título A, sintoma B, ambiente e procedimento C, resultado esperado D) e índice GIN. A consulta usa `plainto_tsquery` com os termos unidos por OU e ordena por `ts_rank_cd`, desempatando por id, porque o E da Semana 0 zerava as paráfrases. A resposta traz `mode: "lexical"`. Entram artigos publicados (qualquer papel) e chamados resolvidos ou fechados (solicitante: só os próprios; técnico: todos); reabrir tira o chamado da busca. Cada item traz `kind`. Os scores de artigo e de chamado vêm de colunas diferentes e só são comparáveis de forma aproximada.
 
@@ -83,7 +84,7 @@ Princípios: tudo sob `/api/v1`; escopo decidido pela sessão, nunca por parâme
 | `POST /articles`, `PATCH /articles/:id` | Técnico | `version` obrigatório no PATCH |
 | `POST /articles/:id/publish`, `/unpublish` | Técnico | Recalcula/limpa embedding na mesma transação |
 | `GET /search?q=` | Ambos | Escopo pelo papel, no servidor |
-| `GET /eval/runs` | Técnico | Só leitura |
+| `GET /eval/runs` | Técnico | Só leitura; 50 execuções mais recentes de `eval_runs` |
 | `GET /health/live`, `/health/ready` | Público | Sem detalhes internos |
 
 ## 5. Matriz de visibilidade

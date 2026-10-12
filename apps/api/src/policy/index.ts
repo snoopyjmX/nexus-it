@@ -8,7 +8,8 @@ export interface PolicyActor {
 export type TicketAction = "ticket:create" | "ticket:read" | "ticket:comment" | "ticket:update";
 export type ArticleAction = "article:read" | "article:write";
 export type DiagnosisAction = "diagnosis:run" | "diagnosis:feedback";
-export type Action = TicketAction | ArticleAction | DiagnosisAction;
+export type EvalAction = "eval:read";
+export type Action = TicketAction | ArticleAction | DiagnosisAction | EvalAction;
 
 type Resource = { requesterId: string } | { status: "draft" | "published" };
 
@@ -25,6 +26,7 @@ export function can(actor: PolicyActor, action: Action, resource?: Resource): bo
     case "article:write":
     case "diagnosis:run":
     case "diagnosis:feedback":
+    case "eval:read":
       return actor.role === "technician";
     case "article:read":
       if (!resource || !("status" in resource)) return false;

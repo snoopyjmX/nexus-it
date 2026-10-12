@@ -15,6 +15,8 @@ interface AppDeps {
   knowledge?: { articles: Router; search: Router };
   // Rotas completas sob /api/v1 (/tickets/:id/diagnosis e /diagnosis-runs/...).
   diagnosis?: Router;
+  // Laboratório de avaliação, só leitura (FR-12), montado em /api/v1/eval.
+  evaluation?: Router;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -57,7 +59,7 @@ function requestLog(logger: Logger): RequestHandler {
   };
 }
 
-export function createApp({ db, logger, auth, tickets, knowledge, diagnosis }: AppDeps) {
+export function createApp({ db, logger, auth, tickets, knowledge, diagnosis, evaluation }: AppDeps) {
   const app = express();
   app.disable("x-powered-by");
   app.use(securityHeaders, requestId, requestLog(logger), rejectCrossOrigin);
@@ -65,6 +67,7 @@ export function createApp({ db, logger, auth, tickets, knowledge, diagnosis }: A
   if (auth) app.use("/api/v1/auth", auth.router);
   // Antes do roteador de chamados: /tickets/:id/diagnosis é tratada aqui, com a autenticação da própria rota.
   if (diagnosis) app.use("/api/v1", diagnosis);
+  if (evaluation) app.use("/api/v1/eval", evaluation);
   if (tickets) app.use("/api/v1/tickets", tickets);
   if (knowledge) {
     app.use("/api/v1/articles", knowledge.articles);

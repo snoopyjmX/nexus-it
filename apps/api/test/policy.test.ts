@@ -75,6 +75,13 @@ describe("política da base de conhecimento (FR-06, FR-15)", () => {
   });
 });
 
+describe("política do laboratório (FR-12)", () => {
+  it("só técnico lê as execuções da avaliação", () => {
+    expect(can(tech, "eval:read")).toBe(true);
+    expect(can(ana, "eval:read")).toBe(false);
+  });
+});
+
 describe("política do diagnóstico (FR-02, FR-09, FR-11)", () => {
   it("só técnico pede diagnóstico e avalia a execução", () => {
     for (const action of ["diagnosis:run", "diagnosis:feedback"] as const) {
