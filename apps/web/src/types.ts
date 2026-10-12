@@ -66,4 +66,13 @@ export type SearchHit =
   | { kind: "article"; id: string; title: string; symptom: string; tags: string[]; score: number }
   | { kind: "ticket"; id: string; title: string; summary: string; score: number };
 
+// `degraded`: a busca semântica está ligada no servidor mas não respondeu (FR-13).
+export interface SearchResponse {
+  mode: "vector" | "lexical";
+  degraded: boolean;
+  items: SearchHit[];
+}
+
+export type SearchStatus = { embeddings: { enabled: false } | { enabled: true; model: string; minScore: number; pending: { articles: number; tickets: number } } };
+
 export type { Role };

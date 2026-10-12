@@ -26,7 +26,7 @@ const article = (over: Partial<Article> = {}): Article => ({
 
 describe("gestão da base: lista (FR-06)", () => {
   it("técnico vê rascunhos, o botão de novo artigo e filtra por situação", async () => {
-    const calls = mockApi({ "GET /auth/me": loggedInAs(TECH), "GET /articles": { body: { items: [article()], nextCursor: null } } });
+    const calls = mockApi({ "GET /auth/me": loggedInAs(TECH), "GET /articles": { body: { items: [article()], nextCursor: null } }, "GET /search/status": { body: { embeddings: { enabled: false } } } });
     renderApp("/base");
     expect(await screen.findByText("Rascunho")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Novo artigo" }).getAttribute("href")).toBe("/base/novo");
