@@ -14,7 +14,8 @@
       "Bash(git diff *)",
       "Bash(git log *)",
       "Bash(docker compose ps)",
-      "Bash(docker compose logs *)"
+      "Bash(docker compose logs *)",
+      "Bash(git push *)"
     ],
     "ask": [
       "Bash(pnpm add *)",
@@ -31,7 +32,10 @@
       "Read(!.env.example)",
       "Edit(./.env)",
       "Edit(./.env.*)",
-      "Bash(git push *)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
       "Bash(git reset --hard *)",
       "Bash(rm -rf *)",
       "Bash(curl *)",

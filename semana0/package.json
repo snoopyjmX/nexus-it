@@ -6,6 +6,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "busca": "tsx src/run-retrieval.ts",
+    "escolher": "tsx src/run-escolher-metodo.ts",
     "geracao": "tsx src/run-generation.ts"
   },
   "dependencies": {
