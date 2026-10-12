@@ -169,7 +169,7 @@ export async function listComments(db: Queryable, ticketId: string, onlyId?: str
     `SELECT c.id, c.body, c.created_at, u.id AS author_id, u.display_name
        FROM ticket_comments c JOIN users u ON u.id = c.author_id
       WHERE c.ticket_id = $1 AND ($2::uuid IS NULL OR c.id = $2)
-      ORDER BY c.created_at, c.id`,
+      ORDER BY c.seq`,
     [ticketId, onlyId ?? null],
   );
   return rows.map((r) => ({ id: r.id, body: r.body, author: { id: r.author_id, displayName: r.display_name }, createdAt: new Date(r.created_at).toISOString() }));
@@ -179,7 +179,7 @@ export async function listEvents(db: Queryable, ticketId: string) {
   const { rows } = await db.query<{ id: string; event_type: string; payload: object; created_at: string; actor_id: string; display_name: string }>(
     `SELECT e.id, e.event_type, e.payload, e.created_at, u.id AS actor_id, u.display_name
        FROM ticket_events e JOIN users u ON u.id = e.actor_id
-      WHERE e.ticket_id = $1 ORDER BY e.created_at, e.id`,
+      WHERE e.ticket_id = $1 ORDER BY e.seq`,
     [ticketId],
   );
   return rows.map((r) => ({ id: r.id, type: r.event_type, actor: { id: r.actor_id, displayName: r.display_name }, payload: r.payload, createdAt: new Date(r.created_at).toISOString() }));
