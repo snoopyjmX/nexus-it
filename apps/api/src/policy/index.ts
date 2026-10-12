@@ -6,15 +6,29 @@ export interface PolicyActor {
 }
 
 export type TicketAction = "ticket:create" | "ticket:read" | "ticket:comment" | "ticket:update";
+export type ArticleAction = "article:read" | "article:write";
+export type Action = TicketAction | ArticleAction;
 
-// Nega por padrão: ação desconhecida, ou ação sobre chamado sem informar o chamado, é falsa.
-export function can(actor: PolicyActor, action: TicketAction, ticket?: { requesterId: string }): boolean {
-  if (action === "ticket:create") return actor.role === "requester";
-  if (action === "ticket:read" || action === "ticket:comment" || action === "ticket:update") {
-    if (!ticket) return false;
-    return actor.role === "technician" || (actor.role === "requester" && ticket.requesterId === actor.id);
+type Resource = { requesterId: string } | { status: "draft" | "published" };
+
+// Nega por padrão: ação desconhecida, ou ação sobre recurso sem informar o recurso, é falsa.
+export function can(actor: PolicyActor, action: Action, resource?: Resource): boolean {
+  switch (action) {
+    case "ticket:create":
+      return actor.role === "requester";
+    case "ticket:read":
+    case "ticket:comment":
+    case "ticket:update":
+      if (!resource || !("requesterId" in resource)) return false;
+      return actor.role === "technician" || (actor.role === "requester" && resource.requesterId === actor.id);
+    case "article:write":
+      return actor.role === "technician";
+    case "article:read":
+      if (!resource || !("status" in resource)) return false;
+      return actor.role === "technician" || resource.status === "published";
+    default:
+      return false;
   }
-  return false;
 }
 
 // Filtro SQL para listagens e buscas. `index` é a posição do primeiro parâmetro ($n) livre na consulta.
@@ -22,3 +36,12 @@ export function scopeTicketsFor(actor: PolicyActor, index: number): { clause: st
   if (actor.role === "technician") return { clause: "TRUE", params: [] };
   return { clause: `t.requester_id = $${index}`, params: [actor.id] };
 }
+
+// Listagem de artigos: técnico enxerga rascunhos para gerir a base, solicitante não.
+export function scopeArticlesFor(actor: PolicyActor): string {
+  return actor.role === "technician" ? "TRUE" : "a.status = 'published'";
+}
+
+// Busca e contexto de diagnóstico só veem o que está publicado, para qualquer papel
+// (matriz de visibilidade, ARCHITECTURE §5; FR-15).
+export const SEARCHABLE_ARTICLES = "a.status = 'published'";

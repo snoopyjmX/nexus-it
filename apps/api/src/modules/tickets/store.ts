@@ -1,4 +1,5 @@
 import type pg from "pg";
+import type { Cursor } from "../../lib/cursor.js";
 import { scopeTicketsFor, type PolicyActor } from "../../policy/index.js";
 import type { Status } from "./transitions.js";
 
@@ -87,11 +88,6 @@ export interface ListFilters {
   priority?: Priority | undefined;
   category?: Category | undefined;
   assigneeId?: string | undefined;
-}
-
-export interface Cursor {
-  createdAt: string;
-  id: string;
 }
 
 export async function listTickets(db: Queryable, actor: PolicyActor, filters: ListFilters, limit: number, cursor?: Cursor) {

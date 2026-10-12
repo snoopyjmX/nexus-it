@@ -6,6 +6,7 @@ import { createLogger } from "../src/lib/logger.js";
 import { createAuth } from "../src/modules/auth/index.js";
 import { createPasswordHasher } from "../src/modules/auth/password.js";
 import { createUser, type Role } from "../src/modules/auth/users.js";
+import { createKnowledgeRouters } from "../src/modules/knowledge/routes.js";
 import { createTicketsRouter } from "../src/modules/tickets/routes.js";
 
 // Custo baixo só nos testes; o custo real é o do ADR-009.
@@ -28,7 +29,7 @@ export async function seedUsers(pool: pg.Pool): Promise<void> {
 export function buildApp(pool: pg.Pool) {
   const auth = createAuth({ pool, hasher, secureCookie: false });
   const tickets = createTicketsRouter({ pool, auth });
-  return createApp({ db: createDatabase(pool), logger: createLogger("silent"), auth, tickets });
+  return createApp({ db: createDatabase(pool), logger: createLogger("silent"), auth, tickets, knowledge: createKnowledgeRouters({ pool, auth }) });
 }
 
 export type App = ReturnType<typeof buildApp>;

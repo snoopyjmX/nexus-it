@@ -1,6 +1,7 @@
 import { type Request, type RequestHandler, Router } from "express";
 import type pg from "pg";
 import { z } from "zod";
+import { decodeCursor, encodeCursor } from "../../lib/cursor.js";
 import { HttpError } from "../../lib/errors.js";
 import { can, type PolicyActor } from "../../policy/index.js";
 import type { Auth, AuthContext } from "../auth/index.js";
@@ -23,7 +24,6 @@ import {
 import { STATUSES, checkTransition } from "./transitions.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const CURSOR = /^(\d{4}-\d{2}-\d{2} [\d:.]+[+-]\d{2}(?::\d{2})?)\|([0-9a-f-]{36})$/i;
 const TERMINAL = new Set(["closed", "cancelled"]);
 
 const text = (max: number) => z.string().trim().min(1).max(max);
@@ -61,16 +61,6 @@ function ticketId(req: Request): string {
   const id = String(req.params.id);
   if (!UUID.test(id)) throw new HttpError(404);
   return id;
-}
-
-function encodeCursor(c: { createdAt: string; id: string }): string {
-  return Buffer.from(`${c.createdAt}|${c.id}`).toString("base64url");
-}
-
-function decodeCursor(raw: string): { createdAt: string; id: string } {
-  const match = CURSOR.exec(Buffer.from(raw, "base64url").toString());
-  if (!match) throw new HttpError(400, "Cursor inválido.");
-  return { createdAt: match[1] as string, id: match[2] as string };
 }
 
 // O cliente nunca recebe os ids internos duplicados (requesterId/assigneeId já estão em requester/assignee).

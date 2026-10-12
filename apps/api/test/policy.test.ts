@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { can, scopeTicketsFor } from "../src/policy/index.js";
-import { TICKET_VISIBILITY } from "../src/policy/visibility-matrix.js";
+import { can, scopeArticlesFor, scopeTicketsFor } from "../src/policy/index.js";
+import { ARTICLE_VISIBILITY, TICKET_VISIBILITY } from "../src/policy/visibility-matrix.js";
 
 const tech = { id: "t1", role: "technician" as const };
 const ana = { id: "r1", role: "requester" as const };
@@ -37,6 +37,39 @@ describe("política de autorização (T-01, T-02, FR-02)", () => {
       for (const [viewer, visible] of Object.entries(row)) {
         const actor = viewers[viewer as keyof typeof viewers];
         expect(can(actor, "ticket:read", ticketOfAna), `${resource} / ${viewer}`).toBe(visible);
+      }
+    }
+  });
+});
+
+describe("política da base de conhecimento (FR-06, FR-15)", () => {
+  const draft = { status: "draft" as const };
+  const published = { status: "published" as const };
+
+  it("só técnico escreve na base", () => {
+    expect(can(tech, "article:write")).toBe(true);
+    expect(can(ana, "article:write")).toBe(false);
+  });
+
+  it("solicitante lê só artigo publicado; técnico lê qualquer um", () => {
+    expect(can(ana, "article:read", published)).toBe(true);
+    expect(can(ana, "article:read", draft)).toBe(false);
+    expect(can(tech, "article:read", draft)).toBe(true);
+    expect(can(tech, "article:read", published)).toBe(true);
+    expect(can(ana, "article:read")).toBe(false);
+  });
+
+  it("escopo de listagem e busca: solicitante só publicado, técnico todos", () => {
+    expect(scopeArticlesFor(ana)).toBe("a.status = 'published'");
+    expect(scopeArticlesFor(tech)).toBe("TRUE");
+  });
+
+  it("a matriz de visibilidade concorda com can() para cada célula", () => {
+    const viewers = { requester: ana, technician: tech };
+    const states = { rascunho: draft, publicado: published };
+    for (const [state, row] of Object.entries(ARTICLE_VISIBILITY)) {
+      for (const [viewer, visible] of Object.entries(row)) {
+        expect(can(viewers[viewer as keyof typeof viewers], "article:read", states[state as keyof typeof states]), `${state} / ${viewer}`).toBe(visible);
       }
     }
   });
