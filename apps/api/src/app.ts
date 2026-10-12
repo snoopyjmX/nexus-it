@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import express, { type RequestHandler } from "express";
+import express, { type RequestHandler, type Router } from "express";
 import type { Logger } from "pino";
 import type { Database } from "./lib/db.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
@@ -11,6 +11,7 @@ interface AppDeps {
   logger: Logger;
   // Opcional para os testes de saúde, que não precisam de sessão. O server.ts sempre passa.
   auth?: Auth;
+  tickets?: Router;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -53,12 +54,13 @@ function requestLog(logger: Logger): RequestHandler {
   };
 }
 
-export function createApp({ db, logger, auth }: AppDeps) {
+export function createApp({ db, logger, auth, tickets }: AppDeps) {
   const app = express();
   app.disable("x-powered-by");
   app.use(securityHeaders, requestId, requestLog(logger), rejectCrossOrigin);
   app.use(express.json({ limit: "100kb" }));
   if (auth) app.use("/api/v1/auth", auth.router);
+  if (tickets) app.use("/api/v1/tickets", tickets);
 
   app.get("/api/v1/health/live", (_req, res) => {
     res.json({ status: "ok" });

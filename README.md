@@ -2,7 +2,7 @@
 
 Ferramenta interna de suporte de TI com diagnóstico rastreável: o técnico vê as fontes, os passos de verificação e uma abstenção explícita quando a evidência é fraca.
 
-> Em construção — Fase 1 (Fundação). Este README será reescrito na Fase 5 com demo, resultados medidos e limitações. Todos os dados são fictícios.
+> Em construção — Fase 2 (chamados, base de conhecimento, busca lexical). Este README será reescrito na Fase 5 com demo, resultados medidos e limitações. Todos os dados são fictícios.
 
 ## Rodar localmente
 

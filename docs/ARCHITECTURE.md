@@ -56,7 +56,7 @@ Estados: `open`, `in_progress`, `waiting_requester`, `resolved`, `closed`, `canc
 | resolved → in_progress | Solicitante dono (reabrir) | Motivo |
 | resolved → closed | Solicitante dono ou técnico | — |
 
-Implementação: tabela de dados numa função pura (`canTransition(from, to, actor, ticket) → ok | erro`). Cada linha da tabela é um teste. Toda transição grava evento na mesma transação.
+Implementação: tabela de dados numa função pura (`canTransition(from, to, actor, ticket) → ok | erro`). Cada linha da tabela é um teste. Toda transição grava evento na mesma transação. Respostas: aresta fora da tabela → 422; aresta existente mas perfil sem permissão → 403 (o chamado já é visível ao ator); comentário ou nota exigidos ausentes → 400; versão desatualizada no PATCH → 409. O evento guarda só origem e destino, nunca texto livre.
 
 ## 4. Endpoints
 
