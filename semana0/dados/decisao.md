@@ -86,4 +86,4 @@ Detalhes e método em [AUTORIA.md](AUTORIA.md). Resumo: nenhum dos dois modelos 
 
 - Revisão por uma terceira pessoa, se o autor quiser. O autor informou ter revisado e aprovado corpus, casos e leitura de injection; o resultado segue exploratório (30 consultas; ver [AUTORIA.md](AUTORIA.md)).
 - Re-medir latência e qualidade com o prompt da opção B na Fase 4, antes de ligar o LLM por padrão.
-- Publicar o resultado no case, incluindo a mudança de conclusão sobre a geração, como manda o `criterios.md`.
+- Publicar o resultado no case, incluindo a mudança de conclusão sobre a geração, como manda o `criterios.md`. Texto pronto em [docs/CASE-SEMANA0.md](../../docs/CASE-SEMANA0.md); falta só colocá-lo no portfólio.
