@@ -1,3 +1,4 @@
+import type { Tone } from "./ui";
 import type { Category, Priority, Status, TicketEvent } from "./types";
 
 export const STATUS_LABEL: Record<Status, string> = {
@@ -7,6 +8,22 @@ export const STATUS_LABEL: Record<Status, string> = {
   resolved: "Resolvido",
   closed: "Fechado",
   cancelled: "Cancelado",
+};
+
+// Só o que pede ação se destaca; o resto fica neutro para a fila continuar legível.
+export const STATUS_TONE: Record<Status, Tone> = {
+  open: "info",
+  in_progress: "neutral",
+  waiting_requester: "warn",
+  resolved: "success",
+  closed: "neutral",
+  cancelled: "neutral",
+};
+export const PRIORITY_TONE: Record<Priority, Tone> = {
+  low: "neutral",
+  medium: "neutral",
+  high: "warn",
+  urgent: "danger",
 };
 
 export const PRIORITY_LABEL: Record<Priority, string> = { low: "Baixa", medium: "Média", high: "Alta", urgent: "Urgente" };

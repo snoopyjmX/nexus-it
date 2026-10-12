@@ -20,7 +20,7 @@ export function Layout() {
       <a href="#conteudo" className={`sr-only focus:not-sr-only focus:absolute focus:m-2 focus:bg-white focus:p-2 ${focusRing}`}>
         Pular para o conteúdo
       </a>
-      <header className="border-b border-slate-300 bg-slate-50">
+      <header className="border-b border-slate-300 bg-white">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-4 p-4">
           <NavLink to="/" className={`text-lg font-semibold ${focusRing}`}>
             NEXUS IT
@@ -34,7 +34,7 @@ export function Layout() {
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <span>{user.displayName}</span>
-            <Button type="button" onClick={() => void logout()}>
+            <Button variant="secondary" type="button" onClick={() => void logout()}>
               Sair
             </Button>
           </div>

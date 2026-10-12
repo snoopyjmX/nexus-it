@@ -3,9 +3,9 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { CATEGORY_LABEL, PRIORITY_LABEL, STATUS_LABEL, formatDate } from "../labels";
+import { CATEGORY_LABEL, PRIORITY_LABEL, PRIORITY_TONE, STATUS_LABEL, STATUS_TONE, formatDate } from "../labels";
 import type { Page, Ticket } from "../types";
-import { Badge, ErrorMessage, Field, Loading, focusRing, inputClass } from "../ui";
+import { Badge, Button, ErrorMessage, Field, Loading, focusRing, inputClass } from "../ui";
 
 interface Filters {
   status: string;
@@ -66,7 +66,7 @@ export function Tickets() {
       </div>
 
       {technician && (
-        <form className="mb-4 grid gap-3 sm:grid-cols-4" aria-label="Filtros" onSubmit={(event) => event.preventDefault()}>
+        <form className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Filtros" onSubmit={(event) => event.preventDefault()}>
           <Select id="f-status" label="Status" value={filters.status} options={STATUS_LABEL} onChange={(status) => setFilters({ ...filters, status })} />
           <Select id="f-priority" label="Prioridade" value={filters.priority} options={PRIORITY_LABEL} onChange={(priority) => setFilters({ ...filters, priority })} />
           <Select id="f-category" label="Categoria" value={filters.category} options={CATEGORY_LABEL} onChange={(category) => setFilters({ ...filters, category })} />
@@ -81,15 +81,15 @@ export function Tickets() {
       {list.isError && <ErrorMessage>Não foi possível carregar os chamados.</ErrorMessage>}
       {list.isSuccess && tickets.length === 0 && <p>{technician ? "Nenhum chamado com esses filtros." : "Você ainda não abriu chamados."}</p>}
       {tickets.length > 0 && (
-        <ul className="divide-y divide-slate-300 rounded border border-slate-300">
+        <ul className="divide-y divide-slate-300 rounded border border-slate-300 bg-white">
           {tickets.map((ticket) => (
             <li key={ticket.id} className="space-y-1 p-3">
               <Link to={`/chamados/${ticket.id}`} className={`font-medium text-blue-800 underline ${focusRing}`}>
                 {ticket.title}
               </Link>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge>{STATUS_LABEL[ticket.status]}</Badge>
-                <Badge>{PRIORITY_LABEL[ticket.priority]}</Badge>
+                <Badge tone={STATUS_TONE[ticket.status]}>{STATUS_LABEL[ticket.status]}</Badge>
+                <Badge tone={PRIORITY_TONE[ticket.priority]}>{PRIORITY_LABEL[ticket.priority]}</Badge>
                 <Badge>{CATEGORY_LABEL[ticket.category]}</Badge>
                 <span className="text-sm text-slate-700">
                   {technician ? `${ticket.requester.displayName} · ` : ""}
@@ -102,9 +102,9 @@ export function Tickets() {
         </ul>
       )}
       {list.hasNextPage && (
-        <button type="button" onClick={() => void list.fetchNextPage()} disabled={list.isFetchingNextPage} className={`mt-4 rounded border border-slate-600 px-4 py-2 ${focusRing}`}>
+        <Button variant="secondary" type="button" onClick={() => void list.fetchNextPage()} disabled={list.isFetchingNextPage} className="mt-4">
           {list.isFetchingNextPage ? "Carregando…" : "Carregar mais"}
-        </button>
+        </Button>
       )}
     </>
   );

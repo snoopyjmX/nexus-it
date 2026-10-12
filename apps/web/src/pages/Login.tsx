@@ -36,7 +36,7 @@ export function Login() {
   }
 
   return (
-    <main id="conteudo" className="mx-auto max-w-sm p-6">
+    <main id="conteudo" className="mx-auto mt-[12vh] max-w-sm rounded border border-slate-300 bg-white p-6">
       <h1 className="mb-6 text-2xl font-semibold">Entrar no NEXUS IT</h1>
       <form onSubmit={submit} className="space-y-4" noValidate>
         {error && <ErrorMessage>{error}</ErrorMessage>}

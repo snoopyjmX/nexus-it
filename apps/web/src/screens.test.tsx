@@ -163,8 +163,61 @@ describe("detalhe do chamado: solicitante", () => {
     expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ version: 1, title: "Novo título", description: "Fila trava no setor 3." });
 
     await user.click(await screen.findByRole("button", { name: "Cancelar chamado" }));
+    expect(calls.some((c) => c.path.endsWith("/transitions"))).toBe(false);
+    await user.click(await screen.findByRole("button", { name: "Confirmar: Cancelar chamado" }));
     await waitFor(() => expect(calls.some((c) => c.path.endsWith("/transitions"))).toBe(true));
     expect(calls.find((c) => c.path.endsWith("/transitions"))?.body).toEqual({ to: "cancelled" });
+  });
+
+  describe("cancelar chamado pede confirmação (FR-04, NFR-06)", () => {
+    const rotas = () => ({
+      ...detailRoutes(ticket()),
+      "GET /auth/me": loggedInAs(ANA),
+      "POST /tickets/t-1/transitions": { body: ticket({ status: "cancelled", version: 2 }) },
+    });
+    const transicoes = (calls: ReturnType<typeof mockApi>) => calls.filter((c) => c.path.endsWith("/transitions"));
+
+    it("clicar em 'Cancelar chamado' só abre o aviso, sem chamar a API", async () => {
+      const calls = mockApi(rotas());
+      renderApp("/chamados/t-1");
+      await userEvent.setup().click(await screen.findByRole("button", { name: "Cancelar chamado" }));
+      expect(await screen.findByText(/não pode ser reaberto/i)).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Confirmar: Cancelar chamado" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Voltar" })).toBeTruthy();
+      expect(transicoes(calls)).toHaveLength(0);
+    });
+
+    it("'Voltar' fecha o aviso sem chamar a API e devolve o foco ao botão que o abriu", async () => {
+      const calls = mockApi(rotas());
+      renderApp("/chamados/t-1");
+      const user = userEvent.setup();
+      const abrir = await screen.findByRole("button", { name: "Cancelar chamado" });
+      await user.click(abrir);
+      await user.click(await screen.findByRole("button", { name: "Voltar" }));
+      expect(screen.queryByText(/não pode ser reaberto/i)).toBeNull();
+      expect(screen.queryByRole("button", { name: "Confirmar: Cancelar chamado" })).toBeNull();
+      expect(document.activeElement).toBe(abrir);
+      expect(transicoes(calls)).toHaveLength(0);
+    });
+
+    it("pelo teclado: o foco abre em 'Voltar', então dois Enter não cancelam; confirmar exige Tab", async () => {
+      const calls = mockApi(rotas());
+      renderApp("/chamados/t-1");
+      const user = userEvent.setup();
+      const abrir = await screen.findByRole("button", { name: "Cancelar chamado" });
+      abrir.focus();
+      await user.keyboard("{Enter}");
+      const voltar = await screen.findByRole("button", { name: "Voltar" });
+      await waitFor(() => expect(document.activeElement).toBe(voltar));
+      expect(voltar.getAttribute("aria-describedby")).toBeTruthy();
+      expect(transicoes(calls)).toHaveLength(0);
+      await user.tab({ shift: true });
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Confirmar: Cancelar chamado" }));
+      await user.keyboard("{Enter}");
+      await waitFor(() => expect(transicoes(calls)).toHaveLength(1));
+      expect(transicoes(calls)[0]?.method).toBe("POST");
+      expect(transicoes(calls)[0]?.body).toEqual({ to: "cancelled" });
+    });
   });
 
   it("não mostra ações do técnico nem de edição quando já está em andamento", async () => {

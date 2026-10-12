@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router";
 import { api, ApiError } from "../api";
 import { useAuth, type User } from "../auth";
-import { CATEGORY_LABEL, PRIORITY_LABEL, STATUS_LABEL, describeEvent, formatDate } from "../labels";
+import { CATEGORY_LABEL, PRIORITY_LABEL, PRIORITY_TONE, STATUS_LABEL, STATUS_TONE, describeEvent, formatDate } from "../labels";
 import type { Status, Ticket, TicketComment, TicketEvent } from "../types";
 import { Badge, Button, ErrorMessage, Field, Loading, focusRing, inputClass } from "../ui";
 import { DiagnosisPanel } from "./DiagnosisPanel";
@@ -14,6 +14,8 @@ interface Action {
   label: string;
   // Texto que a API exige nesta transição (ARCHITECTURE §3).
   needs?: { field: "comment" | "resolutionNote"; label: string };
+  // Aviso mostrado antes de enviar; torna a ação um passo de confirmação.
+  confirm?: string;
 }
 
 // Espelha a tabela de transições só para decidir quais botões mostrar. Quem decide é a API.
@@ -25,7 +27,7 @@ function actionsFor(user: User, ticket: Ticket): Action[] {
     case "open":
       return [
         ...(technician ? [{ to: "in_progress", label: "Iniciar atendimento" } as Action] : []),
-        { to: "cancelled", label: "Cancelar chamado" } as Action,
+        { to: "cancelled", label: "Cancelar chamado", confirm: "Um chamado cancelado não pode ser reaberto." } as Action,
       ];
     case "in_progress":
       return technician
@@ -54,6 +56,7 @@ export function TicketDetail() {
   const client = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Action | "edit" | null>(null);
+  const opener = useRef<HTMLElement | null>(null);
 
   const ticket = useQuery({ queryKey: ["ticket", id], queryFn: () => api<Ticket>("GET", `/tickets/${id}`) });
   const comments = useQuery({ queryKey: ["ticket", id, "comments"], queryFn: () => api<{ items: TicketComment[] }>("GET", `/tickets/${id}/comments`), enabled: ticket.isSuccess });
@@ -113,8 +116,8 @@ export function TicketDetail() {
       </p>
       <h1 className="mb-2 text-2xl font-semibold">{t.title}</h1>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Badge>{STATUS_LABEL[t.status]}</Badge>
-        <Badge>{PRIORITY_LABEL[t.priority]}</Badge>
+        <Badge tone={STATUS_TONE[t.status]}>{STATUS_LABEL[t.status]}</Badge>
+        <Badge tone={PRIORITY_TONE[t.priority]}>{PRIORITY_LABEL[t.priority]}</Badge>
         <Badge>{CATEGORY_LABEL[t.category]}</Badge>
         <span className="text-sm text-slate-700">
           Aberto por {t.requester.displayName} em {formatDate(t.createdAt)}
@@ -140,9 +143,9 @@ export function TicketDetail() {
               <Button type="submit" disabled={mutation.isPending}>
                 Salvar alterações
               </Button>
-              <button type="button" onClick={() => setPending(null)} className={`rounded border border-slate-600 px-4 py-2 ${focusRing}`}>
+              <Button variant="secondary" type="button" onClick={() => setPending(null)}>
                 Descartar
-              </button>
+              </Button>
             </div>
           </form>
         ) : (
@@ -162,38 +165,55 @@ export function TicketDetail() {
           </h2>
           <div className="flex flex-wrap gap-2">
             {owner && t.status === "open" && (
-              <button type="button" onClick={() => setPending("edit")} className={`rounded border border-slate-600 px-4 py-2 ${focusRing}`}>
+              <Button variant="secondary" type="button" onClick={() => setPending("edit")}>
                 Editar chamado
-              </button>
+              </Button>
             )}
             {actions.map((action) => (
               <Button
                 key={action.to + action.label}
+                variant={action.to === "cancelled" ? "danger" : "primary"}
                 type="button"
                 disabled={mutation.isPending}
-                onClick={() => (action.needs ? setPending(action) : mutation.mutate({ method: "POST", path: "/transitions", body: { to: action.to } }))}
+                onClick={(event) => {
+                  opener.current = event.currentTarget;
+                  if (action.needs || action.confirm) setPending(action);
+                  else mutation.mutate({ method: "POST", path: "/transitions", body: { to: action.to } });
+                }}
               >
                 {action.label}
               </Button>
             ))}
             {technician && t.assignee?.id !== user.id && (
-              <button type="button" disabled={mutation.isPending} onClick={() => patch({ assigneeId: user.id })} className={`rounded border border-slate-600 px-4 py-2 ${focusRing}`}>
+              <Button variant="secondary" type="button" disabled={mutation.isPending} onClick={() => patch({ assigneeId: user.id })}>
                 Assumir
-              </button>
+              </Button>
             )}
           </div>
-          {pending && pending !== "edit" && pending.needs && (
+          {pending && pending !== "edit" && (pending.needs || pending.confirm) && (
             <form onSubmit={(event) => submitAction(event, pending)} className="mt-3 max-w-xl space-y-3">
-              <Field label={pending.needs.label} id="action-text">
-                <textarea id="action-text" name="text" rows={3} maxLength={5000} required className={inputClass} />
-              </Field>
+              {pending.confirm && <p id="action-confirm">{pending.confirm}</p>}
+              {pending.needs && (
+                <Field label={pending.needs.label} id="action-text">
+                  <textarea id="action-text" name="text" rows={3} maxLength={5000} required className={inputClass} />
+                </Field>
+              )}
               <div className="flex gap-2">
-                <Button type="submit" disabled={mutation.isPending}>
+                <Button type="submit" variant={pending.to === "cancelled" ? "danger" : "primary"} aria-describedby={pending.confirm ? "action-confirm" : undefined} disabled={mutation.isPending}>
                   Confirmar: {pending.label}
                 </Button>
-                <button type="button" onClick={() => setPending(null)} className={`rounded border border-slate-600 px-4 py-2 ${focusRing}`}>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  autoFocus={!!pending.confirm}
+                  aria-describedby={pending.confirm ? "action-confirm" : undefined}
+                  onClick={() => {
+                    setPending(null);
+                    opener.current?.focus();
+                  }}
+                >
                   Voltar
-                </button>
+                </Button>
               </div>
             </form>
           )}
