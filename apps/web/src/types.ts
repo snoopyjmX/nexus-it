@@ -93,4 +93,72 @@ export interface Diagnosis {
   steps: { articleId: string; text: string }[];
 }
 
+// Laboratório (GET /eval/runs, FR-12). O formato do `result` é o que o runner de packages/evaluation grava.
+export interface EvalCounts {
+  n: number;
+  hit1: number;
+  hit5: number;
+  mrr: number;
+}
+
+export interface EvalThreshold {
+  threshold: number;
+  abstainedUnanswerable: number;
+  totalUnanswerable: number;
+  lostAnswerable: number;
+  totalAnswerable: number;
+}
+
+export interface EvalQueryRow {
+  id: string;
+  type: string;
+  category: string;
+  group: string | null;
+  expected: string[];
+  position: number | null;
+  top5: string[];
+  expectedInTop5: number;
+  topScore: number;
+}
+
+export interface EvalEnvironment {
+  date: string;
+  commit: string;
+  node: string;
+  os: string;
+  cpu: string;
+  memoryGb: number;
+}
+
+export interface EvalResult {
+  schemaVersion: number;
+  set: "dev" | "test";
+  datasetVersion: string;
+  searchMode: "lexical" | "vector";
+  embeddingModel: string | null;
+  environment: EvalEnvironment;
+  suite: {
+    queryCount: number;
+    degradedQueries: number;
+    modes: Partial<Record<"lexical" | "vector", number>>;
+    byType: Record<string, EvalCounts>;
+    byCategory: Record<string, EvalCounts>;
+    abstention: { calibration: EvalThreshold | null; validation: EvalThreshold | null; configured: EvalThreshold | null };
+    rows: EvalQueryRow[];
+  };
+}
+
+export interface EvalRun {
+  id: string;
+  createdAt: string;
+  set: "dev" | "test";
+  datasetVersion: string;
+  searchMode: "lexical" | "vector";
+  embeddingModel: string | null;
+  llmModel: string | null;
+  promptVersion: string | null;
+  environment: EvalEnvironment;
+  result: EvalResult;
+}
+
 export type { Role };

@@ -7,6 +7,7 @@ import { ArticleForm } from "./pages/ArticleForm";
 import { ArticlePage } from "./pages/ArticlePage";
 import { Home } from "./pages/Home";
 import { Knowledge } from "./pages/Knowledge";
+import { Lab } from "./pages/Lab";
 import { NewTicket } from "./pages/NewTicket";
 import { TicketDetail } from "./pages/TicketDetail";
 import { Tickets } from "./pages/Tickets";
@@ -31,6 +32,7 @@ export function App() {
             <Route path="base/novo" element={<ArticleForm mode="create" />} />
             <Route path="base/:id" element={<ArticlePage />} />
             <Route path="base/:id/editar" element={<ArticleForm mode="edit" />} />
+            <Route path="laboratorio" element={<Lab />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
