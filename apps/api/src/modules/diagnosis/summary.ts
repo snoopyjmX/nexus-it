@@ -52,27 +52,38 @@ function defang(text: string): string {
 
 const label = (index: number): string => `F${index + 1}`;
 
+// Tetos de entrada: o contexto do modelo é de 8192 tokens e o que passar disso é cortado em silêncio pelo Ollama,
+// o que levaria embora o delimitador final e parte das instruções.
+export const FIELD_MAX = { description: 600, title: 200, text: 400 } as const;
+export const DATA_MAX = 6000;
+const clip = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max)}…` : text);
+
 export function buildPrompt({ ticket, sources, steps }: SummaryInput): SummaryPrompt {
   const labelOf = new Map(sources.map((source, index) => [source.id, label(index)]));
   const sourceLines = sources.map((source, index) =>
     source.kind === "article"
-      ? `[${label(index)}] Artigo: ${source.title}\nSintoma: ${source.symptom}`
-      : `[${label(index)}] Chamado resolvido: ${source.title}\nResumo: ${source.summary}`,
+      ? `[${label(index)}] Artigo: ${clip(source.title, FIELD_MAX.title)}\nSintoma: ${clip(source.symptom, FIELD_MAX.text)}`
+      : `[${label(index)}] Chamado resolvido: ${clip(source.title, FIELD_MAX.title)}\nResumo: ${clip(source.summary, FIELD_MAX.text)}`,
   );
   const stepLines = steps.map((step, index) => `${index + 1}. [${labelOf.get(step.articleId) ?? "?"}] ${step.text}`);
-  const data = [`Chamado: ${ticket.title}\n${ticket.description}`, `Fontes:\n${sourceLines.join("\n\n")}`, `Passos do procedimento:\n${stepLines.join("\n") || "(nenhum)"}`].join("\n\n");
-  return { system: SYSTEM, user: `<<<DADOS>>>\n${defang(data)}\n<<<FIM>>>\n\nEscreva o resumo e liste os rótulos das fontes usadas.` };
+  const data = [`Chamado: ${clip(ticket.title, FIELD_MAX.title)}\n${clip(ticket.description, FIELD_MAX.description)}`, `Fontes:\n${sourceLines.join("\n\n")}`, `Passos do procedimento:\n${stepLines.join("\n") || "(nenhum)"}`].join("\n\n");
+  return { system: SYSTEM, user: `<<<DADOS>>>\n${defang(clip(data, DATA_MAX))}\n<<<FIM>>>\n\nEscreva o resumo e liste os rótulos das fontes usadas.` };
 }
+
+const URL_PATTERN = /(?:[a-z][a-z0-9+.-]*:\/\/|www\.|javascript:)[^\s<>"')\]]*/gi;
+const foreignUrl = (text: string, context: string): boolean => (text.match(URL_PATTERN) ?? []).some((url) => !context.includes(url));
 
 const output = z.object({ resumo: z.string(), fontes: z.array(z.string()) }).strict();
 
 // Tudo que o modelo devolve é tratado como não confiável (T-05): formato estrito, citações só de rótulos do contexto
 // e texto sem caracteres de controle. Nunca lança: o diagnóstico determinístico não depende do modelo (FR-13).
-export async function summarize(provider: SummaryProvider, input: SummaryInput): Promise<SummaryOutcome> {
+export async function summarize(provider: SummaryProvider, input: SummaryInput, onProviderError?: (error: unknown) => void): Promise<SummaryOutcome> {
+  const prompt = buildPrompt(input);
   let raw: string;
   try {
-    raw = await provider.complete(buildPrompt(input));
-  } catch {
+    raw = await provider.complete(prompt);
+  } catch (error) {
+    onProviderError?.(error);
     return { status: "provider_error", discarded: 0 };
   }
 
@@ -85,9 +96,12 @@ export async function summarize(provider: SummaryProvider, input: SummaryInput):
   const parsed = output.safeParse(json);
   if (!parsed.success) return { status: "invalid_output", discarded: 0 };
 
+  // Sem controles ASCII/C1, separadores de linha Unicode e marcadores de direção (spoofing visual); só "\n" fica.
   // eslint-disable-next-line no-control-regex -- remover controles é justamente o objetivo
-  const text = parsed.data.resumo.replace(/[\u0000-\u0009\u000B-\u001F\u007F]/g, "").trim();
+  const text = parsed.data.resumo.replace(/[\u0000-\u0009\u000B-\u001F\u007F-\u009F\u2028\u2029\u202A-\u202E\u2066-\u2069]/g, "").trim();
   if (text.length === 0 || text.length > SUMMARY_MAX) return { status: "invalid_output", discarded: 0 };
+  // T-05: o resumo não traz endereço que não esteja nos dados que o modelo recebeu.
+  if (foreignUrl(text, prompt.user)) return { status: "invalid_output", discarded: 0 };
 
   const sourceIds: string[] = [];
   let discarded = 0;

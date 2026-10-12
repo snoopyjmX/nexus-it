@@ -1,4 +1,5 @@
 import { type Request, type RequestHandler, Router } from "express";
+import type { Logger } from "pino";
 import type pg from "pg";
 import { z } from "zod";
 import { HttpError } from "../../lib/errors.js";
@@ -40,11 +41,12 @@ export interface DiagnosisDeps {
   limits?: { max: number; windowMs: number };
   // Camada opcional do modelo (ADR-008). Sem ela o diagnóstico é só o determinístico.
   summarizer?: SummaryProvider;
+  logger?: Logger;
 }
 
 // Monta as rotas direto em /api/v1 (o diagnóstico mora em /tickets/:id e em /diagnosis-runs), por isso a
 // autenticação é por rota, e não um router.use que alcançaria também /health.
-export function createDiagnosisRouter({ pool, auth, embeddings, thresholdTrusted = false, limits = { max: 10, windowMs: 60_000 }, summarizer }: DiagnosisDeps) {
+export function createDiagnosisRouter({ pool, auth, embeddings, thresholdTrusted = false, limits = { max: 10, windowMs: 60_000 }, summarizer, logger }: DiagnosisDeps) {
   const router = Router();
   const csrf: RequestHandler = auth.requireCsrf;
   const limiter = createRateLimiter(limits);
@@ -72,7 +74,7 @@ export function createDiagnosisRouter({ pool, auth, embeddings, thresholdTrusted
       const stepSources = articleIdsForSteps(sources);
       const steps = toSteps(stepSources, await articleProcedures(pool, stepSources));
       // O modelo só redige sobre o resultado já decidido e não é chamado em abstenção.
-      const summary = summarizer && evidence !== null ? await summarize(summarizer, { ticket, sources, steps }) : null;
+      const summary = summarizer && evidence !== null ? await summarize(summarizer, { ticket, sources, steps }, (error) => logger?.warn({ errorName: error instanceof Error ? error.name : typeof error }, "resumo do modelo indisponível")) : null;
       const runId = await insertRun(pool, {
         ticketId: ticket.id,
         userId: actor.id,

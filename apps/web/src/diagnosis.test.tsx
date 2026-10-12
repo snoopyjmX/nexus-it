@@ -319,6 +319,12 @@ describe("resumo gerado pelo modelo (ADR-008, T-05, FR-13)", () => {
     expect(within(section).queryByRole("link", { name: "Fila travada no setor 2" })).toBeNull();
   });
 
+  it("liga chamado resolvido citado ao detalhe do chamado", async () => {
+    await openAndRun({ ...withSummary, summary: { text: "Veja o caso anterior.", sourceIds: ["t-7"] } });
+    const section = await within(await panel()).findByRole("region", { name: "Resumo gerado por IA" });
+    expect(within(section).getByRole("link", { name: "Fila travada no setor 2" }).getAttribute("href")).toBe("/chamados/t-7");
+  });
+
   it("trata o texto do modelo como texto puro: nada é interpretado como HTML ou link", async () => {
     const hostile = '<img src=x onerror="alert(1)"> [clique](https://exemplo.invalid) <a href="https://exemplo.invalid">aqui</a>';
     await openAndRun({ ...withSummary, summary: { text: hostile, sourceIds: ["a-1"] } });

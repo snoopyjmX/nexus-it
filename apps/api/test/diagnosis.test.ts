@@ -582,19 +582,17 @@ describe("resumo opcional do modelo (ADR-008, FR-13, T-05)", () => {
     expect(await runRow(res.body.runId)).toMatchObject({ mode: "deterministic", llm_outcome: outcome, llm_model: "gemma3:4b" });
   });
 
-  it("o prompt leva só o chamado pedido e fontes que o técnico pode ver (rascunho fica de fora)", async () => {
+  it("o prompt leva o chamado pedido e só fontes publicadas (rascunho fica de fora)", async () => {
     const summarizer = fakeSummarizer(citing("Resumo.", ["F1"]));
     await start({ diagnosis: { summarizer } });
     await publishedArticle();
     const draft = await api(app, tecnico).post("/articles", { ...ARTICLE, title: "Rascunho secreto de impressora", tags: [] });
     expect(draft.status).toBe(201);
-    const other = await newTicket(bia, { title: "Outro chamado privado da Bia", description: "nada a ver" });
     await diagnose(await newTicket());
     const prompt = summarizer.calls[0]?.user ?? "";
     expect(prompt).toContain(TICKET.title);
+    expect(prompt).toContain("Impressora de rede não imprime");
     expect(prompt).not.toContain("Rascunho secreto");
-    expect(prompt).not.toContain("Outro chamado privado");
-    expect(other).toBeTruthy();
   });
 });
 

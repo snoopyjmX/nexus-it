@@ -29,6 +29,7 @@ const app = createApp({
   tickets: createTicketsRouter({ pool, auth, ...(embeddings ? { embeddings } : {}) }),
   knowledge: createKnowledgeRouters({ pool, auth, ...(embeddings ? { embeddings } : {}) }),
   diagnosis: createDiagnosisRouter({ pool, auth, thresholdTrusted: config.DIAGNOSIS_THRESHOLD_TRUSTED,
+    logger,
     ...(embeddings ? { embeddings } : {}),
     ...(config.LLM_ENABLED ? { summarizer: createOllamaSummaryProvider({ baseUrl: config.OLLAMA_BASE_URL, model: config.LLM_MODEL, timeoutMs: config.LLM_TIMEOUT_MS }) } : {}),
   }),

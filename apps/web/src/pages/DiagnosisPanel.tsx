@@ -67,7 +67,7 @@ function Summary({ summary, sources }: { summary: NonNullable<Diagnosis["summary
       <h3 id="diag-resumo" className="font-semibold">
         Resumo gerado por IA
       </h3>
-      <p className="text-sm">Texto escrito por um modelo a partir das fontes abaixo; pode conter erros. Confira nas fontes.</p>
+      <p className="text-sm">Texto escrito por um modelo a partir das fontes abaixo; pode conter erros e não indica que a evidência bastou. Confira nas fontes.</p>
       <p className="whitespace-pre-wrap">{summary.text}</p>
       <ul className="flex flex-wrap gap-x-4 text-sm">
         {cited.map((source) => (
