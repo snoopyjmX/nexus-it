@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router";
 import { api, ApiError } from "../api";
 import { useAuth, type User } from "../auth";
-import { CATEGORY_LABEL, PRIORITY_LABEL, STATUS_LABEL, describeEvent, formatDate } from "../labels";
+import { CATEGORY_LABEL, PRIORITY_LABEL, PRIORITY_TONE, STATUS_LABEL, STATUS_TONE, describeEvent, formatDate } from "../labels";
 import type { Status, Ticket, TicketComment, TicketEvent } from "../types";
 import { Badge, Button, ErrorMessage, Field, Loading, focusRing, inputClass } from "../ui";
 import { DiagnosisPanel } from "./DiagnosisPanel";
@@ -113,8 +113,8 @@ export function TicketDetail() {
       </p>
       <h1 className="mb-2 text-2xl font-semibold">{t.title}</h1>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Badge>{STATUS_LABEL[t.status]}</Badge>
-        <Badge>{PRIORITY_LABEL[t.priority]}</Badge>
+        <Badge tone={STATUS_TONE[t.status]}>{STATUS_LABEL[t.status]}</Badge>
+        <Badge tone={PRIORITY_TONE[t.priority]}>{PRIORITY_LABEL[t.priority]}</Badge>
         <Badge>{CATEGORY_LABEL[t.category]}</Badge>
         <span className="text-sm text-slate-700">
           Aberto por {t.requester.displayName} em {formatDate(t.createdAt)}
@@ -140,9 +140,9 @@ export function TicketDetail() {
               <Button type="submit" disabled={mutation.isPending}>
                 Salvar alterações
               </Button>
-              <button type="button" onClick={() => setPending(null)} className={`rounded border border-slate-600 px-4 py-2 ${focusRing}`}>
+              <Button variant="secondary" type="button" onClick={() => setPending(null)}>
                 Descartar
-              </button>
+              </Button>
             </div>
           </form>
         ) : (
@@ -162,13 +162,14 @@ export function TicketDetail() {
           </h2>
           <div className="flex flex-wrap gap-2">
             {owner && t.status === "open" && (
-              <button type="button" onClick={() => setPending("edit")} className={`rounded border border-slate-600 px-4 py-2 ${focusRing}`}>
+              <Button variant="secondary" type="button" onClick={() => setPending("edit")}>
                 Editar chamado
-              </button>
+              </Button>
             )}
             {actions.map((action) => (
               <Button
                 key={action.to + action.label}
+                variant={action.to === "cancelled" ? "danger" : "primary"}
                 type="button"
                 disabled={mutation.isPending}
                 onClick={() => (action.needs ? setPending(action) : mutation.mutate({ method: "POST", path: "/transitions", body: { to: action.to } }))}
@@ -177,9 +178,9 @@ export function TicketDetail() {
               </Button>
             ))}
             {technician && t.assignee?.id !== user.id && (
-              <button type="button" disabled={mutation.isPending} onClick={() => patch({ assigneeId: user.id })} className={`rounded border border-slate-600 px-4 py-2 ${focusRing}`}>
+              <Button variant="secondary" type="button" disabled={mutation.isPending} onClick={() => patch({ assigneeId: user.id })}>
                 Assumir
-              </button>
+              </Button>
             )}
           </div>
           {pending && pending !== "edit" && pending.needs && (
@@ -191,9 +192,9 @@ export function TicketDetail() {
                 <Button type="submit" disabled={mutation.isPending}>
                   Confirmar: {pending.label}
                 </Button>
-                <button type="button" onClick={() => setPending(null)} className={`rounded border border-slate-600 px-4 py-2 ${focusRing}`}>
+                <Button variant="secondary" type="button" onClick={() => setPending(null)}>
                   Voltar
-                </button>
+                </Button>
               </div>
             </form>
           )}
