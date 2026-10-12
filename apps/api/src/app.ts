@@ -13,6 +13,8 @@ interface AppDeps {
   auth?: Auth;
   tickets?: Router;
   knowledge?: { articles: Router; search: Router };
+  // Rotas completas sob /api/v1 (/tickets/:id/diagnosis e /diagnosis-runs/...).
+  diagnosis?: Router;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -55,7 +57,7 @@ function requestLog(logger: Logger): RequestHandler {
   };
 }
 
-export function createApp({ db, logger, auth, tickets, knowledge }: AppDeps) {
+export function createApp({ db, logger, auth, tickets, knowledge, diagnosis }: AppDeps) {
   const app = express();
   app.disable("x-powered-by");
   app.use(securityHeaders, requestId, requestLog(logger), rejectCrossOrigin);
@@ -66,6 +68,7 @@ export function createApp({ db, logger, auth, tickets, knowledge }: AppDeps) {
     app.use("/api/v1/articles", knowledge.articles);
     app.use("/api/v1/search", knowledge.search);
   }
+  if (diagnosis) app.use("/api/v1", diagnosis);
 
   app.get("/api/v1/health/live", (_req, res) => {
     res.json({ status: "ok" });

@@ -13,6 +13,9 @@ const schema = z.object({
   EMBEDDING_TIMEOUT_MS: z.coerce.number().int().min(100).max(120_000).default(15_000),
   // Limiar medido na Semana 0 (ADR-007); ponto de partida, recalibrar na base real.
   VECTOR_MIN_SCORE: z.coerce.number().min(0).max(1).default(0.5393),
+  // Diagnóstico (ADR-011): true aplica o corte do limiar quando a busca é vetorial. false é o fallback do
+  // FR-10 para quando a recalibração não separar as classes: fontes rotuladas "evidência não verificada".
+  DIAGNOSIS_THRESHOLD_TRUSTED: z.enum(["true", "false"]).default("true").transform((value) => value === "true"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
 });
 
