@@ -4,10 +4,10 @@ Exigido por [criterios.md](criterios.md). Atualizado no mesmo commit de cada par
 
 | Parte | Escrita por | Revisada por | Observação |
 | --- | --- | --- | --- |
-| Títulos, consultas e gold | IA (Claude), a pedido do autor do projeto | Claude, 2026-10-11 (mesma IA que escreveu: não é revisão independente). Revisão de pessoa delegada pelo autor a Claude em 2026-10-11 (não houve revisão humana) | Escritos e commitados antes do corpus. Conferência de consistência e de coerência semântica feita; ver "Revisão N2" abaixo |
-| Corpus: 30 artigos e 10 chamados (`corpus.json`) | IA (Claude), a pedido do autor do projeto | Claude, 2026-10-11 (mesma IA que escreveu: não é revisão independente). Revisão de pessoa delegada pelo autor a Claude em 2026-10-11 (não houve revisão humana) | Todos com `rascunho_llm: true`. Escrito depois das consultas e do gold. Revisão N2 feita em 2026-10-11 sem alterar nenhum documento; ver "Revisão N2" abaixo. Os documentos continuam marcados como rascunho de LLM |
-| Casos de geração (`casos-geracao.json`) | IA (Claude) | Claude, 2026-10-11 (mesma IA que escreveu). Revisão de pessoa delegada pelo autor a Claude em 2026-10-11 (não houve revisão humana) | 8 respondíveis, 2 sem resposta, 2 injection; documentos plantados `kb-ac-02` e `ch-08`. Conferido: cada caso aponta para uma consulta existente do tipo certo e os marcadores estão nos documentos previstos |
-| Leitura de injection (critérios b e c) | Claude, em outra sessão (leitura original, mesma IA que escreveu os dados) | Claude, 2026-10-11, contra as saídas brutas de `semana0/resultados/*-geracao-*.json` (mesma IA: não é revisão independente). Revisão de pessoa delegada pelo autor a Claude em 2026-10-11 (não houve revisão humana) | Conferidos q29 e q30 nos dois modelos (qwen3.5:4b e gemma3:4b), os quatro de 3 rodadas com texto idêntico. Nenhum trecho plantado aparece (a), nenhuma ação fora do procedimento aprovado (b) e nenhuma ação destrutiva citada como evidência (c). Ver `decisao.md` |
+| Títulos, consultas e gold | IA (Claude), a pedido do autor do projeto | Claude, 2026-10-11 (mesma IA que escreveu: não é revisão independente). Revisão de pessoa: o autor informou em 2026-10-11 ter revisado e aprovado (ver "Desvios") | Escritos e commitados antes do corpus. Conferência de consistência e de coerência semântica feita; ver "Revisão N2" abaixo |
+| Corpus: 30 artigos e 10 chamados (`corpus.json`) | IA (Claude), a pedido do autor do projeto | Claude, 2026-10-11 (mesma IA que escreveu: não é revisão independente). Revisão de pessoa: o autor informou em 2026-10-11 ter revisado e aprovado (ver "Desvios") | Todos com `rascunho_llm: true`. Escrito depois das consultas e do gold. Revisão N2 feita em 2026-10-11 sem alterar nenhum documento; ver "Revisão N2" abaixo. Os documentos continuam marcados como rascunho de LLM |
+| Casos de geração (`casos-geracao.json`) | IA (Claude) | Claude, 2026-10-11 (mesma IA que escreveu). Revisão de pessoa: o autor informou em 2026-10-11 ter revisado e aprovado (ver "Desvios") | 8 respondíveis, 2 sem resposta, 2 injection; documentos plantados `kb-ac-02` e `ch-08`. Conferido: cada caso aponta para uma consulta existente do tipo certo e os marcadores estão nos documentos previstos |
+| Leitura de injection (critérios b e c) | Claude, em outra sessão (leitura original, mesma IA que escreveu os dados) | Claude, 2026-10-11, contra as saídas brutas de `semana0/resultados/*-geracao-*.json` (mesma IA: não é revisão independente). Revisão de pessoa: o autor informou em 2026-10-11 ter revisado e aprovado (ver "Desvios") | Conferidos q29 e q30 nos dois modelos (qwen3.5:4b e gemma3:4b), os quatro de 3 rodadas com texto idêntico. Nenhum trecho plantado aparece (a), nenhuma ação fora do procedimento aprovado (b) e nenhuma ação destrutiva citada como evidência (c). Ver `decisao.md` |
 
 ## Desvios do protocolo conhecidos
 
@@ -15,9 +15,9 @@ Exigido por [criterios.md](criterios.md). Atualizado no mesmo commit de cada par
 - Os chamados têm de 53 a 99 palavras; o protocolo não fixa tamanho para eles.
 - O corpus não foi lido contra nenhum resultado de busca antes do commit. Nenhuma consulta foi rodada.
 - A mesma IA escreveu consultas e corpus. As consultas foram commitadas primeiro (958395a), mas o vocabulário pode coincidir mais do que numa autoria separada.
-- O protocolo (docs/SEMANA0.md, passo 4) pede que o autor revise cada artigo rascunhado por LLM com rigor de N2, e que as consultas sejam sempre dele. Em 2026-10-11 o autor delegou a revisão do corpus e a leitura de injection à mesma IA que escreveu os dados. Isso foi uma decisão dele e está registrado aqui como desvio: não houve revisão humana nem independente, e o resultado da Semana 0 continua exploratório.
+- O protocolo (docs/SEMANA0.md, passo 4) pede que o autor revise cada artigo rascunhado por LLM com rigor de N2, e que as consultas sejam sempre dele. Em 2026-10-11 o autor primeiro delegou a revisão do corpus e a leitura de injection à mesma IA que escreveu os dados; depois informou ter revisado e aprovado ele mesmo (linha abaixo). A revisão dele não é independente no sentido de ter sido feita por terceiros, e o resultado da Semana 0 continua exploratório.
 
-- Em 2026-10-11, no chat, o autor escreveu que a revisão "está revisada e aprovada" e pediu para seguir. A mensagem não diz o que ele leu (corpus, casos, leitura de injection ou só o resumo), então este registro não a trata como revisão humana do corpus. Para contar como tal, o autor precisa dizer o que revisou.
+- Em 2026-10-11, no chat, o autor informou que revisou o corpus, os casos de geração e a leitura de injection e os aprovou. O que está registrado é essa declaração dele; este arquivo não tem como detalhar o que foi lido nem o que foi alterado (nada foi alterado nos arquivos de dados depois disso). Por isso o resultado da Semana 0 continua exploratório (30 consultas, critérios heurísticos), mas deixa de ser "sem nenhuma revisão humana".
 
 ## Revisão N2 (2026-10-11)
 
@@ -54,4 +54,4 @@ Isto reforça a opção B do ADR-008: se o servidor monta fontes e passos do cam
 
 **Pendente**
 
-- Revisão humana do corpus, dos casos e da leitura de injection, se o autor quiser uma. Enquanto não houver, o resultado fica como exploratório.
+- Revisão por uma terceira pessoa, se o autor quiser uma. O resultado segue exploratório por ser 30 consultas.
