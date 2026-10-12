@@ -6,6 +6,7 @@ import { createLogger } from "../src/lib/logger.js";
 import { createAuth } from "../src/modules/auth/index.js";
 import { createPasswordHasher } from "../src/modules/auth/password.js";
 import { createUser, type Role } from "../src/modules/auth/users.js";
+import { createEvalRouter } from "../src/modules/evaluation/routes.js";
 import { createDiagnosisRouter, type DiagnosisDeps } from "../src/modules/diagnosis/routes.js";
 import type { Embeddings } from "../src/modules/embeddings/index.js";
 import { createKnowledgeRouters } from "../src/modules/knowledge/routes.js";
@@ -35,7 +36,7 @@ export function buildApp(pool: pg.Pool, embeddings?: Embeddings, diagnosisOption
   const extra = embeddings ? { embeddings } : {};
   const tickets = createTicketsRouter({ pool, auth, ...extra });
   const diagnosis = createDiagnosisRouter({ pool, auth, ...extra, ...diagnosisOptions });
-  return createApp({ db: createDatabase(pool), logger: createLogger("silent"), auth, tickets, knowledge: createKnowledgeRouters({ pool, auth, ...extra }), diagnosis });
+  return createApp({ db: createDatabase(pool), logger: createLogger("silent"), auth, tickets, knowledge: createKnowledgeRouters({ pool, auth, ...extra }), diagnosis, evaluation: createEvalRouter({ pool, auth }) });
 }
 
 export type App = ReturnType<typeof buildApp>;

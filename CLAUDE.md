@@ -4,7 +4,7 @@ Ferramenta interna de suporte de TI (organização fictícia). Técnico abre um 
 Especificação única: @docs/PRD.md. Arquitetura e specs: @docs/ARCHITECTURE.md. Ameaças: docs/THREAT_MODEL.md.
 
 ## Fase atual
-Fases 1 e 2 entregues. Fase 3: busca vetorial, telas de busca e infraestrutura entregues (vetorial desligada por padrão); faltam o conjunto de teste congelado (só o autor escreve), a avaliação nele e a recalibração do limiar. Em 2026-10-12 o autor autorizou seguir para as fases seguintes sem esperar esses itens: Fase 4 em andamento (diagnóstico determinístico no PR do ADR-011; LLM opcional e laboratório a seguir) e depois Fase 5. Enquanto a recalibração não for registrada, `DIAGNOSIS_THRESHOLD_TRUSTED` fica `false`. NÃO implemente itens de "Fora do escopo" do PRD. NUNCA escreva em `packages/evaluation/dataset/test/` nem invente consultas, corpus ou gold.
+Fases 1 e 2 entregues. Fase 3: busca vetorial, telas de busca e infraestrutura entregues (vetorial desligada por padrão); faltam o conjunto de teste congelado (só o autor escreve), a avaliação nele e a recalibração do limiar. Em 2026-10-12 o autor autorizou seguir para as fases seguintes sem esperar esses itens: Fase 4 em andamento (diagnóstico determinístico, painel e resumo opcional do LLM entregues; avaliação por CLI e `GET /eval/runs` no ADR-012; tela do laboratório a seguir) e depois Fase 5. Enquanto a recalibração não for registrada, `DIAGNOSIS_THRESHOLD_TRUSTED` fica `false`. NÃO implemente itens de "Fora do escopo" do PRD. NUNCA escreva em `packages/evaluation/dataset/test/` nem invente consultas, corpus ou gold.
 
 ## Stack (não troque sem ADR)
 pnpm monorepo · apps/web: React + TS + Vite + Tailwind + TanStack Query · apps/api: Node LTS + TS + Express 5 + Zod · Postgres + pgvector via driver `pg` e SQL parametrizado · Vitest, Supertest, Playwright · Docker Compose · GitHub Actions.
@@ -13,6 +13,7 @@ pnpm monorepo · apps/web: React + TS + Vite + Tailwind + TanStack Query · apps
 - `pnpm lint` · `pnpm typecheck` · `pnpm test` (precisa do banco: `docker compose up -d db` e `.env.test`)
 - `pnpm db:migrate` · `pnpm db:seed` (exige `SEED_PASSWORD`) · `pnpm user:create` · `pnpm dev:api` · `pnpm dev:web`
 - Semana 0: `cd semana0 && pnpm busca` · `pnpm geracao` (ver semana0/README.md). Nunca escreva consultas, corpus, gold ou critérios por ele.
+- `pnpm eval [--set dev|test]`: suíte de avaliação (FR-12, ADR-012); usa `DATABASE_URL` já migrado, schema temporário, grava em `eval_runs`. Nunca escreve em `packages/evaluation/dataset/test/`.
 - Ainda não existe: `pnpm test:e2e` (Fase 5)
 
 ## Regras inegociáveis
