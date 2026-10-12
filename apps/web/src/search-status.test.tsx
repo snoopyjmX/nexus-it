@@ -44,7 +44,7 @@ describe("aviso do modo da busca (FR-13)", () => {
     expect(screen.getByRole("note").textContent).toContain("A busca semântica está indisponível");
     expect(screen.getByRole("note").textContent).toContain("por palavras");
     // O resultado continua na tela: a degradação não derruba a busca.
-    expect(screen.getByRole("status").textContent).toContain("1 resultado(s)");
+    expect(screen.getByRole("status").textContent).toContain("1 resultado para");
   });
 
   it("degradada sem resultado: aviso e 'nada encontrado' aparecem juntos", async () => {
@@ -107,5 +107,40 @@ describe("painel de vetores pendentes (técnico, FR-13)", () => {
     await screen.findByText("Nenhum artigo publicado.");
     expect(screen.queryByRole("region", { name: "Busca semântica" })).toBeNull();
     expect(calls.some((c) => c.path.startsWith("/search/status"))).toBe(false);
+  });
+});
+
+describe("textos da base (NFR-06)", () => {
+  const hit2 = { ...hit, id: "a-2", title: "Impressora sem toner" };
+
+  it("busca com 1 resultado usa o singular", async () => {
+    mockApi({ "GET /auth/me": loggedInAs(ANA), "GET /articles": noArticles, "GET /search": { body: { mode: "lexical", degraded: false, items: [hit] } } });
+    renderApp("/base");
+    await searchFor("termo");
+    await screen.findByRole("link", { name: "Impressora offline" });
+    expect(screen.getByRole("status").textContent).toContain("1 resultado para “termo”.");
+  });
+
+  it("busca com 2 resultados usa o plural", async () => {
+    mockApi({ "GET /auth/me": loggedInAs(ANA), "GET /articles": noArticles, "GET /search": { body: { mode: "lexical", degraded: false, items: [hit, hit2] } } });
+    renderApp("/base");
+    await searchFor("termo");
+    await screen.findByRole("link", { name: "Impressora sem toner" });
+    expect(screen.getByRole("status").textContent).toContain("2 resultados para “termo”.");
+  });
+
+  it("técnico filtra por Rascunho e a lista vem vazia: diz 'Nenhum artigo.', sem 'publicado'", async () => {
+    mockApi({ "GET /auth/me": loggedInAs(TECH), "GET /articles": noArticles, "GET /search/status": { body: { embeddings: { enabled: false } } } });
+    renderApp("/base");
+    await userEvent.setup().selectOptions(await screen.findByLabelText("Situação"), "draft");
+    expect(await screen.findByText("Nenhum artigo.")).toBeTruthy();
+    expect(screen.queryByText("Nenhum artigo publicado.")).toBeNull();
+  });
+
+  it("técnico com filtro Todos e lista vazia: 'Nenhum artigo.'", async () => {
+    mockApi({ "GET /auth/me": loggedInAs(TECH), "GET /articles": noArticles, "GET /search/status": { body: { embeddings: { enabled: false } } } });
+    renderApp("/base");
+    expect(await screen.findByText("Nenhum artigo.")).toBeTruthy();
+    expect(screen.queryByText("Nenhum artigo publicado.")).toBeNull();
   });
 });

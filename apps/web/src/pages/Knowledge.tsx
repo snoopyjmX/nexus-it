@@ -98,7 +98,7 @@ export function Knowledge() {
       {active.isPending && <Loading />}
       {active.isError && <ErrorMessage>Não foi possível carregar a base.</ErrorMessage>}
 
-      {!searching && list.data && (list.data.items.length === 0 ? <p>Nenhum artigo publicado.</p> : (
+      {!searching && list.data && (list.data.items.length === 0 ? <p>{technician ? "Nenhum artigo." : "Nenhum artigo publicado."}</p> : (
         <ul className="divide-y divide-slate-300 rounded border border-slate-300">
           {list.data.items.map((article) => (
             <li key={article.id} className="space-y-1 p-3">
@@ -116,7 +116,7 @@ export function Knowledge() {
       {searching && found.data && (
         <>
           <p className="mb-2" role="status">
-            {found.data.items.length === 0 ? `Nada encontrado para “${term}”.` : `${found.data.items.length} resultado(s) para “${term}”.`}
+            {found.data.items.length === 0 ? `Nada encontrado para “${term}”.` : `${plural(found.data.items.length, "resultado", "resultados")} para “${term}”.`}
           </p>
           <p className="mb-2 text-sm">{found.data.mode === "vector" ? "Busca semântica" : "Busca por palavras"}</p>
           {found.data.degraded && (

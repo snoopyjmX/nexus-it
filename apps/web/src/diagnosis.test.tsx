@@ -365,3 +365,28 @@ describe("resumo gerado pelo modelo (ADR-008, T-05, FR-13)", () => {
     expect(within(aside).queryByText(/resumo/i)).toBeNull();
   });
 });
+
+describe("painel de diagnóstico: tom dos selos (NFR-06)", () => {
+  const badge = async (text: string) => (await within(await panel()).findByText(text)).className;
+
+  it("'Evidência insuficiente' tem o tom de aviso", async () => {
+    await openAndRun({ ...result, abstained: true, evidence: null, sources: [], steps: [] });
+    const cls = await badge("Evidência insuficiente");
+    expect(cls).toContain("border-amber-700");
+    expect(cls).toContain("bg-amber-50");
+  });
+
+  it("'Evidência não verificada' tem o tom de aviso", async () => {
+    await openAndRun();
+    const cls = await badge("Evidência não verificada");
+    expect(cls).toContain("border-amber-700");
+    expect(cls).toContain("bg-amber-50");
+  });
+
+  it("'Acima do limiar de similaridade' tem o tom informativo", async () => {
+    await openAndRun({ ...result, evidence: "threshold" });
+    const cls = await badge("Acima do limiar de similaridade");
+    expect(cls).toContain("border-blue-700");
+    expect(cls).toContain("bg-blue-50");
+  });
+});

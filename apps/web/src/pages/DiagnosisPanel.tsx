@@ -86,7 +86,7 @@ function Result({ diagnosis }: { diagnosis: Diagnosis }) {
   if (diagnosis.abstained) {
     return (
       <div className="space-y-2">
-        <Badge>Evidência insuficiente</Badge>
+        <Badge tone="warn">Evidência insuficiente</Badge>
         <p>A base não tem fonte que sustente um diagnóstico para este chamado.</p>
       </div>
     );
@@ -104,12 +104,12 @@ function Result({ diagnosis }: { diagnosis: Diagnosis }) {
     <div className="space-y-4">
       {diagnosis.evidence === "threshold" ? (
         <div className="space-y-1">
-          <Badge>Acima do limiar de similaridade</Badge>
+          <Badge tone="info">Acima do limiar de similaridade</Badge>
           <p className="text-sm">O limiar é uma regra empírica deste conjunto de documentos; não é uma probabilidade de acerto.</p>
         </div>
       ) : (
         <div className="space-y-1">
-          <Badge>Evidência não verificada</Badge>
+          <Badge tone="warn">Evidência não verificada</Badge>
           <p className="text-sm">Nenhum limiar de similaridade confiável foi aplicado a esta busca. Confira as fontes antes de seguir os passos.</p>
         </div>
       )}

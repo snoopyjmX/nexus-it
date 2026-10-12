@@ -172,6 +172,19 @@ describe("laboratório: detalhe da execução", () => {
     expect(within(await screen.findByRole("table", { name: "Por tipo de consulta" })).getByRole("row", { name: /ambigua/ })).toBeTruthy();
   });
 
+  it("ver detalhes da execução selecionada mantém o foco do teclado no botão (NFR-06)", async () => {
+    await open([run()]);
+    const user = userEvent.setup();
+    const button = within(await screen.findByRole("table", { name: "Execuções" })).getByRole("button", { name: /ver detalhes/i });
+    button.focus();
+    await user.click(button);
+    expect(document.activeElement).toBe(button);
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+    // Sem disabled, o botão selecionado precisa de outro sinal visual de seleção.
+    expect(button.className).toContain("aria-pressed:");
+    expect(await screen.findByRole("table", { name: "Por tipo de consulta" })).toBeTruthy();
+  });
+
   it("lista as consultas uma a uma, com posição e esperadas no top-5", async () => {
     await open([run()]);
     const user = userEvent.setup();
