@@ -23,14 +23,14 @@ Navegador ↔ API · API ↔ Postgres · API ↔ Ollama (saída do modelo é nã
 | T-07 | Citação inventada | Servidor descarta ID fora da lista recuperada e permitida | Provider fake devolvendo IDs falsos → descartados e contados |
 | T-08 | Segredo no Git | `.env` ignorado; `.env.example` sem valores; Gitleaks no pre-commit e na CI; deny de leitura de `.env` no Claude Code | Fixture com segredo falso falha a CI |
 | T-09 | Dependência vulnerável | Lockfile congelado; Dependabot; `pnpm audit`; ADR para dependência nova | Audit na CI; exceções com prazo em ADR |
-| T-10 | Container inseguro | Multi-stage; não-root; sem Docker socket; Postgres só em 127.0.0.1 | Trivy config + revisão no release |
+| T-10 | Container inseguro | Multi-stage; não-root; sem Docker socket; Postgres só em 127.0.0.1 | Trivy config (só o Dockerfile) no CI; teste do compose (`images-pinned.test.ts`); imagens por digest; revisão no release |
 | T-11 | Log vazando dados | Logger com redaction de authorization, cookie, password, token, body | Teste faz login e procura campos proibidos no log |
 | T-12 | Modelo fora derruba o app | Timeout; erro tipado; diagnóstico determinístico independe do LLM | Ollama parado → e2e de chamados, KB e painel passa |
 | T-13 | Licença incompatível | Revisão de licença de pacotes e modelos antes de publicar | Lista de licenças gerada no release |
 | T-14 | Backup exposto ou que não restaura | Dumps fora do Git; restore testado | Restore em banco vazio no checklist de release |
 | T-15 | Rascunho/despublicado no índice | Embedding na própria linha; filtro de status na query (ADR-001) | Despublicar → zero resultados nas buscas lexical e vetorial |
 | T-16 | CSRF | Token sincronizador na sessão + `SameSite=Lax` + same-origin | Mutação sem token → 403 |
-| T-17 | Pipeline comprometido | `permissions: contents: read`; actions por SHA; sem `pull_request_target`; CI sem segredo real | Revisão do workflow no release; Trivy/CodeQL |
+| T-17 | Pipeline comprometido | `permissions: contents: read`; actions por SHA; sem `pull_request_target`; CI sem segredo real | `workflows.test.ts` (SHA, permissões, sem `pull_request_target`); CodeQL no CI; revisão do workflow no release |
 
 ## Autenticação e sessão
 

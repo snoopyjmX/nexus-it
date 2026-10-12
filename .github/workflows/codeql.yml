@@ -1,0 +1,34 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "23 5 * * 1" # segunda-feira; pega consultas novas mesmo sem commit
+
+# Menor privilégio (T-17): leitura por padrão; só o job de análise ganha security-events para enviar o resultado.
+# Em PR de fork o token é só de leitura: a análise roda, mas o envio do resultado falha e o job fica vermelho.
+# É uma falha segura; não troque o gatilho por pull_request_target para contornar.
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Análise de código (JavaScript/TypeScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
+        with:
+          languages: javascript-typescript
+          build-mode: none
+      - uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
+        with:
+          category: "/language:javascript-typescript"
