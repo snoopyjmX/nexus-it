@@ -12,6 +12,7 @@ interface AppDeps {
   // Opcional para os testes de saúde, que não precisam de sessão. O server.ts sempre passa.
   auth?: Auth;
   tickets?: Router;
+  knowledge?: { articles: Router; search: Router };
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -54,13 +55,17 @@ function requestLog(logger: Logger): RequestHandler {
   };
 }
 
-export function createApp({ db, logger, auth, tickets }: AppDeps) {
+export function createApp({ db, logger, auth, tickets, knowledge }: AppDeps) {
   const app = express();
   app.disable("x-powered-by");
   app.use(securityHeaders, requestId, requestLog(logger), rejectCrossOrigin);
   app.use(express.json({ limit: "100kb" }));
   if (auth) app.use("/api/v1/auth", auth.router);
   if (tickets) app.use("/api/v1/tickets", tickets);
+  if (knowledge) {
+    app.use("/api/v1/articles", knowledge.articles);
+    app.use("/api/v1/search", knowledge.search);
+  }
 
   app.get("/api/v1/health/live", (_req, res) => {
     res.json({ status: "ok" });

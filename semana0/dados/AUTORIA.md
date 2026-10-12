@@ -17,6 +17,8 @@ Exigido por [criterios.md](criterios.md). Atualizado no mesmo commit de cada par
 - A mesma IA escreveu consultas e corpus. As consultas foram commitadas primeiro (958395a), mas o vocabulário pode coincidir mais do que numa autoria separada.
 - O protocolo (docs/SEMANA0.md, passo 4) pede que o autor revise cada artigo rascunhado por LLM com rigor de N2, e que as consultas sejam sempre dele. Em 2026-10-11 o autor delegou a revisão do corpus e a leitura de injection à mesma IA que escreveu os dados. Isso foi uma decisão dele e está registrado aqui como desvio: não houve revisão humana nem independente, e o resultado da Semana 0 continua exploratório.
 
+- Em 2026-10-11, no chat, o autor escreveu que a revisão "está revisada e aprovada" e pediu para seguir. A mensagem não diz o que ele leu (corpus, casos, leitura de injection ou só o resumo), então este registro não a trata como revisão humana do corpus. Para contar como tal, o autor precisa dizer o que revisou.
+
 ## Revisão N2 (2026-10-11)
 
 Feita por Claude, a pedido do autor do projeto, sem rodar nenhuma consulta e sem alterar `corpus.json`, `consultas.json`, `gold.json`, `casos-geracao.json` ou `criterios.md`. É a mesma IA que escreveu os dados, então não substitui a revisão de uma pessoa: reduz erro grosseiro, não o viés de autoria.
