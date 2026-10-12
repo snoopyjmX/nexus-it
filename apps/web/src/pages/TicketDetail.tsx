@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router";
 import { api, ApiError } from "../api";
 import { useAuth, type User } from "../auth";
@@ -14,6 +14,8 @@ interface Action {
   label: string;
   // Texto que a API exige nesta transição (ARCHITECTURE §3).
   needs?: { field: "comment" | "resolutionNote"; label: string };
+  // Aviso mostrado antes de enviar; torna a ação um passo de confirmação.
+  confirm?: string;
 }
 
 // Espelha a tabela de transições só para decidir quais botões mostrar. Quem decide é a API.
@@ -25,7 +27,7 @@ function actionsFor(user: User, ticket: Ticket): Action[] {
     case "open":
       return [
         ...(technician ? [{ to: "in_progress", label: "Iniciar atendimento" } as Action] : []),
-        { to: "cancelled", label: "Cancelar chamado" } as Action,
+        { to: "cancelled", label: "Cancelar chamado", confirm: "Um chamado cancelado não pode ser reaberto." } as Action,
       ];
     case "in_progress":
       return technician
@@ -54,6 +56,7 @@ export function TicketDetail() {
   const client = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Action | "edit" | null>(null);
+  const opener = useRef<HTMLElement | null>(null);
 
   const ticket = useQuery({ queryKey: ["ticket", id], queryFn: () => api<Ticket>("GET", `/tickets/${id}`) });
   const comments = useQuery({ queryKey: ["ticket", id, "comments"], queryFn: () => api<{ items: TicketComment[] }>("GET", `/tickets/${id}/comments`), enabled: ticket.isSuccess });
@@ -172,7 +175,11 @@ export function TicketDetail() {
                 variant={action.to === "cancelled" ? "danger" : "primary"}
                 type="button"
                 disabled={mutation.isPending}
-                onClick={() => (action.needs ? setPending(action) : mutation.mutate({ method: "POST", path: "/transitions", body: { to: action.to } }))}
+                onClick={(event) => {
+                  opener.current = event.currentTarget;
+                  if (action.needs || action.confirm) setPending(action);
+                  else mutation.mutate({ method: "POST", path: "/transitions", body: { to: action.to } });
+                }}
               >
                 {action.label}
               </Button>
@@ -183,16 +190,28 @@ export function TicketDetail() {
               </Button>
             )}
           </div>
-          {pending && pending !== "edit" && pending.needs && (
+          {pending && pending !== "edit" && (pending.needs || pending.confirm) && (
             <form onSubmit={(event) => submitAction(event, pending)} className="mt-3 max-w-xl space-y-3">
-              <Field label={pending.needs.label} id="action-text">
-                <textarea id="action-text" name="text" rows={3} maxLength={5000} required className={inputClass} />
-              </Field>
+              {pending.confirm && <p id="action-confirm">{pending.confirm}</p>}
+              {pending.needs && (
+                <Field label={pending.needs.label} id="action-text">
+                  <textarea id="action-text" name="text" rows={3} maxLength={5000} required className={inputClass} />
+                </Field>
+              )}
               <div className="flex gap-2">
-                <Button type="submit" disabled={mutation.isPending}>
+                <Button type="submit" variant={pending.to === "cancelled" ? "danger" : "primary"} aria-describedby={pending.confirm ? "action-confirm" : undefined} disabled={mutation.isPending}>
                   Confirmar: {pending.label}
                 </Button>
-                <Button variant="secondary" type="button" onClick={() => setPending(null)}>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  autoFocus={!!pending.confirm}
+                  aria-describedby={pending.confirm ? "action-confirm" : undefined}
+                  onClick={() => {
+                    setPending(null);
+                    opener.current?.focus();
+                  }}
+                >
                   Voltar
                 </Button>
               </div>
