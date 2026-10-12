@@ -3,10 +3,14 @@ import express, { type RequestHandler } from "express";
 import type { Logger } from "pino";
 import type { Database } from "./lib/db.js";
 import { errorHandler, notFoundHandler } from "./lib/errors.js";
+import { rejectCrossOrigin } from "./lib/origin.js";
+import type { Auth } from "./modules/auth/index.js";
 
 interface AppDeps {
   db: Database;
   logger: Logger;
+  // Opcional para os testes de saúde, que não precisam de sessão. O server.ts sempre passa.
+  auth?: Auth;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -49,11 +53,12 @@ function requestLog(logger: Logger): RequestHandler {
   };
 }
 
-export function createApp({ db, logger }: AppDeps) {
+export function createApp({ db, logger, auth }: AppDeps) {
   const app = express();
   app.disable("x-powered-by");
-  app.use(securityHeaders, requestId, requestLog(logger));
+  app.use(securityHeaders, requestId, requestLog(logger), rejectCrossOrigin);
   app.use(express.json({ limit: "100kb" }));
+  if (auth) app.use("/api/v1/auth", auth.router);
 
   app.get("/api/v1/health/live", (_req, res) => {
     res.json({ status: "ok" });

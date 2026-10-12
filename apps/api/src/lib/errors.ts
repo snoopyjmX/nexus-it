@@ -3,10 +3,25 @@ import type { Logger } from "pino";
 
 const TITLES: Record<number, string> = {
   400: "Bad Request",
+  401: "Unauthorized",
+  403: "Forbidden",
   404: "Not Found",
   413: "Content Too Large",
+  429: "Too Many Requests",
   500: "Internal Server Error",
 };
+
+// Erro esperado, com status e texto seguros para o cliente. Qualquer outro erro
+// vira 500 genérico.
+export class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    readonly detail?: string,
+    readonly headers: Record<string, string> = {},
+  ) {
+    super(detail ?? `HTTP ${status}`);
+  }
+}
 
 function sendProblem(res: Parameters<RequestHandler>[1], status: number, detail?: string) {
   res
@@ -28,6 +43,10 @@ function bodyParserType(error: unknown): string | undefined {
 // O cliente nunca recebe stack trace nem mensagem interna.
 export function errorHandler(logger: Logger): ErrorRequestHandler {
   return (error: unknown, req, res, _next) => {
+    if (error instanceof HttpError) {
+      res.set(error.headers);
+      return sendProblem(res, error.status, error.detail);
+    }
     const type = bodyParserType(error);
     if (type === "entity.parse.failed") return sendProblem(res, 400, "Corpo da requisição inválido.");
     if (type === "entity.too.large") return sendProblem(res, 413);
