@@ -1,0 +1,21 @@
+# T-09: atualizações chegam como PR e passam pela CI, em vez de acontecerem sozinhas num build.
+# O Dependabot não varre o `services.image` do ci.yml: o teste images-pinned.test.ts exige que ele
+# seja igual à imagem do docker-compose.yml, então a troca do pgvector é feita nos dois juntos.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/apps/api"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm" # cobre o pnpm
+    directory: "/"
+    schedule:
+      interval: "weekly"

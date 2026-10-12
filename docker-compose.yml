@@ -1,7 +1,7 @@
 services:
   db:
-    # Tag de versão maior; fixar por digest na Fase 5 (hardening).
-    image: pgvector/pgvector:pg17
+    # Fixada por digest (T-10). Para atualizar: docker pull pgvector/pgvector:pg17, leia o RepoDigests e troque aqui, no ci.yml e rode os testes.
+    image: pgvector/pgvector:pg17@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d
     environment:
       POSTGRES_USER: nexus
       POSTGRES_DB: nexus

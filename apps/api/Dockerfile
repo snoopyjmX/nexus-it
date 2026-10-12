@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-# Tag de versão maior; fixar por digest na Fase 5 (hardening).
-FROM node:22-alpine AS build
+# Imagem fixada por digest (T-10); atualizar: docker pull node:22-alpine e trocar o RepoDigests aqui.
+FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS build
 WORKDIR /repo
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
@@ -11,7 +11,7 @@ RUN pnpm --filter @nexus/api build \
  && cp -r apps/api/src/db/migrations apps/api/dist/db/migrations \
  && pnpm --filter @nexus/api deploy --prod --legacy /out
 
-FROM node:22-alpine
+FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build --chown=node:node /out ./
