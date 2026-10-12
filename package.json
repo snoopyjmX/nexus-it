@@ -12,7 +12,9 @@
     "test": "pnpm -r --workspace-concurrency=1 test",
     "db:migrate": "pnpm --filter @nexus/api db:migrate",
     "dev:api": "pnpm --filter @nexus/api dev",
-    "dev:web": "pnpm --filter @nexus/web dev"
+    "dev:web": "pnpm --filter @nexus/web dev",
+    "db:seed": "pnpm --filter @nexus/api db:seed",
+    "user:create": "pnpm --filter @nexus/api user:create"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

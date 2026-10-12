@@ -11,9 +11,9 @@ pnpm monorepo · apps/web: React + TS + Vite + Tailwind + TanStack Query · apps
 
 ## Comandos
 - `pnpm lint` · `pnpm typecheck` · `pnpm test` (precisa do banco: `docker compose up -d db` e `.env.test`)
-- `pnpm db:migrate` · `pnpm dev:api` · `pnpm dev:web`
+- `pnpm db:migrate` · `pnpm db:seed` (exige `SEED_PASSWORD`) · `pnpm user:create` · `pnpm dev:api` · `pnpm dev:web`
 - Semana 0: `cd semana0 && pnpm busca` · `pnpm geracao` (ver semana0/README.md). Nunca escreva consultas, corpus, gold ou critérios por ele.
-- Ainda não existem: `pnpm test:e2e` (Fase 2), `pnpm db:seed` (Fase 1, junto com usuários)
+- Ainda não existe: `pnpm test:e2e` (Fase 2)
 
 ## Regras inegociáveis
 - Toda mudança cita um ID (FR-xx, NFR-xx, T-xx) e entrega teste junto. Sem teste, não está pronto.

@@ -29,6 +29,18 @@ DATABASE_URL=postgres://nexus:<senha>@127.0.0.1:5432/nexus pnpm dev:api   # http
 pnpm dev:web                    # http://localhost:5173
 ```
 
+Usuários só existem por seed ou CLI (não há cadastro público). A senha nunca vai por argumento nem tem valor padrão:
+
+```bash
+# cenário fictício: 1 técnico e 2 solicitantes (tecnico@, solicitante1@, solicitante2@exemplo.local)
+DATABASE_URL=... SEED_PASSWORD='uma-senha-local-com-12+' pnpm db:seed
+
+# um usuário avulso; a senha vem de NEXUS_USER_PASSWORD ou da entrada padrão
+printf '%s\n' 'uma-senha-local-com-12+' | DATABASE_URL=... pnpm user:create --email ana@exemplo.local --name "Ana" --role technician
+```
+
+O seed não roda com `NODE_ENV=production`. Papéis: `technician` e `requester`.
+
 Para subir a API em container:
 
 ```bash

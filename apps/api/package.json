@@ -8,7 +8,9 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:migrate": "tsx src/db/migrate-cli.ts"
+    "db:migrate": "tsx src/db/migrate-cli.ts",
+    "db:seed": "tsx src/cli/seed-cli.ts",
+    "user:create": "tsx src/cli/create-user-cli.ts"
   },
   "devDependencies": {
     "@types/express": "5.0.6",

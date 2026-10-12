@@ -34,7 +34,7 @@ Navegador ↔ API · API ↔ Postgres · API ↔ Ollama (saída do modelo é nã
 
 ## Autenticação e sessão
 
-Argon2id (parâmetros em ADR, alvo de 100–500 ms medido no Mac, partindo do OWASP Password Storage Cheat Sheet vigente). Cookie `HttpOnly`, `Secure`, `SameSite=Lax`; ID regenerado no login; expiração absoluta e por inatividade; só hash do token no banco. Mensagem genérica e tempo uniforme no login; rate limit por IP e por conta. Headers: CSP restritiva, `X-Content-Type-Options`, `Referrer-Policy`, `frame-ancestors 'none'`.
+`scrypt` do Node (N=2^16, r=8, p=2, alvo de 100–500 ms; ADR-009 explica por que não Argon2id no Node 22, e o hash guarda os parâmetros para migrar depois). Token CSRF derivado do token da sessão e `Origin` de outro host recusado em mutações. Cookie `HttpOnly`, `Secure`, `SameSite=Lax`; ID regenerado no login; expiração absoluta e por inatividade; só hash do token no banco. Mensagem genérica e tempo uniforme no login; rate limit por IP e por conta. Headers: CSP restritiva, `X-Content-Type-Options`, `Referrer-Policy`, `frame-ancestors 'none'`.
 
 ## Riscos residuais declarados
 

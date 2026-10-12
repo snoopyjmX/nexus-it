@@ -30,7 +30,7 @@ scripts/               seed, create-user, backup, restore
 | Tabela | Campos principais | Nota |
 | --- | --- | --- |
 | `users` | id, email, display_name, password_hash, role, active, created_at | role ∈ {requester, technician}. Criado só por seed/CLI. |
-| `sessions` | id_hash, user_id, csrf_token_hash, expires_at, idle_expires_at, created_at | Store de sessão em Postgres; só hashes. |
+| `sessions` | id_hash, user_id, expires_at, idle_expires_at, created_at | Store de sessão em Postgres; só o hash do token. O token CSRF é derivado do token da sessão (ADR-009), sem coluna própria. |
 | `tickets` | id, title, description, category, priority, status, requester_id, assignee_id, resolution_note, version, embedding, embedding_model, created_at, updated_at, resolved_at | `embedding` preenchido só quando resolvido (ADR-001). |
 | `ticket_comments` | id, ticket_id, author_id, body, created_at | |
 | `ticket_events` | id, ticket_id, actor_id, event_type, payload, created_at | Append-only; payload em allow-list. |
