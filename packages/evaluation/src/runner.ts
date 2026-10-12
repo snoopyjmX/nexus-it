@@ -17,7 +17,7 @@ import { environmentInfo, RESULT_SCHEMA_VERSION, type EvalResult } from "./resul
 import { runSuite, type SearchFn } from "./suite.js";
 
 // Categorias do corpus → categorias de chamado do app. A categoria não entra na busca; serve só para o chamado ser válido.
-const TICKET_CATEGORY: Record<string, Category> = { vpn: "network", rede: "network", impressora: "hardware", email: "software", acesso: "access", estacao: "hardware" };
+export const TICKET_CATEGORY: Record<string, Category> = { vpn: "network", rede: "network", impressora: "hardware", email: "software", acesso: "access", estacao: "hardware" };
 
 const SEARCH_LIMIT = 20;
 
@@ -53,7 +53,7 @@ async function fixId(pool: pg.Pool, table: "kb_articles" | "tickets", id: string
   return stable;
 }
 
-async function seedCorpus(pool: pg.Pool, documents: EvalDocument[]): Promise<Map<string, string>> {
+export async function seedCorpus(pool: pg.Pool, documents: EvalDocument[]): Promise<Map<string, string>> {
   const hasher = createPasswordHasher({ N: 1024, r: 8, p: 1 }); // ninguém faz login: custo baixo basta
   const password = randomBytes(16).toString("hex");
   const technician = await createUser(pool, hasher, { email: "avaliador@eval.local", displayName: "Avaliador", role: "technician", password });

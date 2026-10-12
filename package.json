@@ -11,6 +11,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --workspace-concurrency=1 test",
     "test:e2e": "pnpm --filter @nexus/e2e e2e",
+    "demo:record": "pnpm --filter @nexus/e2e demo:record",
+    "build:demo": "pnpm --filter @nexus/web build:demo",
     "db:migrate": "pnpm --filter @nexus/api db:migrate",
     "dev:api": "pnpm --filter @nexus/api dev",
     "dev:web": "pnpm --filter @nexus/web dev",
