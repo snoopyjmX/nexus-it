@@ -5,6 +5,7 @@ import { Button, focusRing } from "./ui";
 const NAV = (role: string): [string, string][] => [
   ["/chamados", role === "technician" ? "Fila" : "Meus chamados"],
   ["/base", "Base de conhecimento"],
+  ...(role === "technician" ? ([["/laboratorio", "Laboratório"]] as [string, string][]) : []),
 ];
 
 export function Layout() {
