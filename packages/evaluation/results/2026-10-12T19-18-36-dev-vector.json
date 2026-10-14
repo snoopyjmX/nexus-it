@@ -1,0 +1,667 @@
+{
+  "schemaVersion": 1,
+  "set": "dev",
+  "datasetVersion": "6593b3ab29a9",
+  "searchMode": "vector",
+  "embeddingModel": "bge-m3",
+  "environment": {
+    "date": "2026-10-12T19:18:36.993Z",
+    "commit": "6bbf795",
+    "node": "v24.14.0",
+    "os": "Darwin 25.6.0 x64",
+    "cpu": "Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz",
+    "memoryGb": 16
+  },
+  "suite": {
+    "queryCount": 30,
+    "degradedQueries": 0,
+    "modes": {
+      "vector": 30
+    },
+    "byType": {
+      "ambigua": {
+        "n": 2,
+        "hit1": 2,
+        "hit5": 2,
+        "mrr": 1
+      },
+      "direta": {
+        "n": 8,
+        "hit1": 8,
+        "hit5": 8,
+        "mrr": 1
+      },
+      "injection": {
+        "n": 2,
+        "hit1": 2,
+        "hit5": 2,
+        "mrr": 1
+      },
+      "parafrase": {
+        "n": 10,
+        "hit1": 10,
+        "hit5": 10,
+        "mrr": 1
+      }
+    },
+    "byCategory": {
+      "acesso": {
+        "n": 5,
+        "hit1": 5,
+        "hit5": 5,
+        "mrr": 1
+      },
+      "email": {
+        "n": 5,
+        "hit1": 5,
+        "hit5": 5,
+        "mrr": 1
+      },
+      "estacao": {
+        "n": 3,
+        "hit1": 3,
+        "hit5": 3,
+        "mrr": 1
+      },
+      "impressora": {
+        "n": 4,
+        "hit1": 4,
+        "hit5": 4,
+        "mrr": 1
+      },
+      "rede": {
+        "n": 2,
+        "hit1": 2,
+        "hit5": 2,
+        "mrr": 1
+      },
+      "vpn": {
+        "n": 3,
+        "hit1": 3,
+        "hit5": 3,
+        "mrr": 1
+      }
+    },
+    "abstention": {
+      "calibration": {
+        "threshold": 0.5392872917955297,
+        "abstainedUnanswerable": 4,
+        "totalUnanswerable": 4,
+        "lostAnswerable": 0,
+        "totalAnswerable": 9
+      },
+      "validation": {
+        "threshold": 0.5392872917955297,
+        "abstainedUnanswerable": 3,
+        "totalUnanswerable": 4,
+        "lostAnswerable": 0,
+        "totalAnswerable": 9
+      },
+      "configured": {
+        "threshold": 0.5393,
+        "abstainedUnanswerable": 7,
+        "totalUnanswerable": 8,
+        "lostAnswerable": 0,
+        "totalAnswerable": 22
+      }
+    },
+    "rows": [
+      {
+        "id": "q01",
+        "type": "direta",
+        "category": "vpn",
+        "group": "calibracao",
+        "expected": [
+          "kb-vpn-01"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-vpn-01",
+          "kb-vpn-02",
+          "kb-vpn-05",
+          "ch-02",
+          "kb-vpn-04"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.7756409839942175
+      },
+      {
+        "id": "q02",
+        "type": "direta",
+        "category": "rede",
+        "group": "validacao",
+        "expected": [
+          "kb-rd-02"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-rd-02",
+          "kb-rd-04",
+          "kb-rd-05",
+          "kb-im-05",
+          "kb-ac-05"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.6637648750052241
+      },
+      {
+        "id": "q03",
+        "type": "direta",
+        "category": "impressora",
+        "group": "calibracao",
+        "expected": [
+          "kb-im-01"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-im-01",
+          "kb-im-04",
+          "kb-im-02",
+          "ch-04",
+          "kb-im-05"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.8137403130531542
+      },
+      {
+        "id": "q04",
+        "type": "direta",
+        "category": "email",
+        "group": "validacao",
+        "expected": [
+          "kb-em-01"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-em-01",
+          "ch-05",
+          "kb-es-02",
+          "kb-em-05",
+          "kb-em-04"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.7403190399357276
+      },
+      {
+        "id": "q05",
+        "type": "direta",
+        "category": "acesso",
+        "group": "calibracao",
+        "expected": [
+          "kb-ac-01"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-ac-01",
+          "kb-ac-05",
+          "ch-01",
+          "ch-08",
+          "kb-ac-04"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.7305725973503246
+      },
+      {
+        "id": "q06",
+        "type": "direta",
+        "category": "estacao",
+        "group": "validacao",
+        "expected": [
+          "kb-es-01"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-es-01",
+          "kb-es-02",
+          "kb-im-03",
+          "ch-09",
+          "kb-es-03"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.7958775612506087
+      },
+      {
+        "id": "q07",
+        "type": "direta",
+        "category": "impressora",
+        "group": "calibracao",
+        "expected": [
+          "kb-im-04"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-im-04",
+          "kb-im-01",
+          "kb-im-05",
+          "kb-im-02",
+          "kb-im-03"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.7379785747477047
+      },
+      {
+        "id": "q08",
+        "type": "direta",
+        "category": "acesso",
+        "group": "validacao",
+        "expected": [
+          "kb-ac-04"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-ac-04",
+          "kb-ac-05",
+          "ch-01",
+          "kb-ac-01",
+          "ch-08"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.7498615682950263
+      },
+      {
+        "id": "q09",
+        "type": "parafrase",
+        "category": "acesso",
+        "group": "calibracao",
+        "expected": [
+          "kb-ac-03"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-ac-03",
+          "ch-10",
+          "ch-05",
+          "kb-es-02",
+          "kb-es-03"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.641695022583026
+      },
+      {
+        "id": "q10",
+        "type": "parafrase",
+        "category": "vpn",
+        "group": "validacao",
+        "expected": [
+          "kb-vpn-04"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-vpn-04",
+          "kb-rd-03",
+          "kb-rd-04",
+          "kb-rd-05",
+          "kb-vpn-02"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.6687507238243214
+      },
+      {
+        "id": "q11",
+        "type": "parafrase",
+        "category": "vpn",
+        "group": "calibracao",
+        "expected": [
+          "kb-vpn-02"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-vpn-02",
+          "kb-es-04",
+          "kb-rd-05",
+          "kb-vpn-05",
+          "ch-09"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.5541594696571744
+      },
+      {
+        "id": "q12",
+        "type": "parafrase",
+        "category": "rede",
+        "group": "validacao",
+        "expected": [
+          "kb-rd-01"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-rd-01",
+          "ch-03",
+          "kb-rd-04",
+          "ch-09",
+          "ch-07"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.6556299719590503
+      },
+      {
+        "id": "q13",
+        "type": "parafrase",
+        "category": "impressora",
+        "group": "calibracao",
+        "expected": [
+          "kb-im-02"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-im-02",
+          "kb-im-01",
+          "ch-04",
+          "kb-im-04",
+          "kb-im-05"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.630569338798523
+      },
+      {
+        "id": "q14",
+        "type": "parafrase",
+        "category": "impressora",
+        "group": "validacao",
+        "expected": [
+          "kb-im-03"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-im-03",
+          "kb-im-01",
+          "ch-04",
+          "kb-im-05",
+          "kb-im-04"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.687914680516615
+      },
+      {
+        "id": "q15",
+        "type": "parafrase",
+        "category": "email",
+        "group": "calibracao",
+        "expected": [
+          "kb-em-02"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-em-02",
+          "ch-09",
+          "ch-10",
+          "kb-ac-02",
+          "ch-07"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.6111234128409295
+      },
+      {
+        "id": "q16",
+        "type": "parafrase",
+        "category": "email",
+        "group": "validacao",
+        "expected": [
+          "kb-em-03"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-em-03",
+          "kb-es-03",
+          "ch-08",
+          "ch-09",
+          "kb-im-04"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.5543329378762579
+      },
+      {
+        "id": "q17",
+        "type": "parafrase",
+        "category": "estacao",
+        "group": "calibracao",
+        "expected": [
+          "kb-es-03"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-es-03",
+          "ch-02",
+          "kb-ac-03",
+          "ch-08",
+          "ch-10"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.6224253043977769
+      },
+      {
+        "id": "q18",
+        "type": "parafrase",
+        "category": "estacao",
+        "group": "validacao",
+        "expected": [
+          "kb-es-02"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-es-02",
+          "kb-es-04",
+          "kb-es-05",
+          "kb-em-01",
+          "kb-im-03"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.6795665789685076
+      },
+      {
+        "id": "q19",
+        "type": "ambigua",
+        "category": "acesso",
+        "group": null,
+        "expected": [
+          "kb-ac-04",
+          "kb-ac-05"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-ac-05",
+          "kb-ac-01",
+          "kb-ac-03",
+          "ch-01",
+          "ch-08"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.634279361620984
+      },
+      {
+        "id": "q20",
+        "type": "ambigua",
+        "category": "email",
+        "group": null,
+        "expected": [
+          "kb-em-04",
+          "kb-em-05"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-em-04",
+          "kb-em-05",
+          "kb-em-01",
+          "ch-08",
+          "kb-em-02"
+        ],
+        "expectedInTop5": 2,
+        "topScore": 0.7076802464628548
+      },
+      {
+        "id": "q21",
+        "type": "sem_resposta",
+        "category": "estacao",
+        "group": "calibracao",
+        "expected": [],
+        "position": null,
+        "top5": [
+          "ch-06",
+          "kb-vpn-03",
+          "kb-es-01",
+          "kb-rd-01",
+          "kb-es-04"
+        ],
+        "expectedInTop5": 0,
+        "topScore": 0.48513922449607616
+      },
+      {
+        "id": "q22",
+        "type": "sem_resposta",
+        "category": "estacao",
+        "group": "calibracao",
+        "expected": [],
+        "position": null,
+        "top5": [
+          "kb-vpn-03",
+          "kb-rd-01",
+          "kb-vpn-02",
+          "ch-06",
+          "ch-09"
+        ],
+        "expectedInTop5": 0,
+        "topScore": 0.504469334546407
+      },
+      {
+        "id": "q23",
+        "type": "sem_resposta",
+        "category": "rede",
+        "group": "calibracao",
+        "expected": [],
+        "position": null,
+        "top5": [
+          "kb-rd-02",
+          "ch-09",
+          "ch-07",
+          "kb-rd-04",
+          "kb-im-05"
+        ],
+        "expectedInTop5": 0,
+        "topScore": 0.49716693264236467
+      },
+      {
+        "id": "q24",
+        "type": "sem_resposta",
+        "category": "estacao",
+        "group": "calibracao",
+        "expected": [],
+        "position": null,
+        "top5": [
+          "kb-im-03",
+          "kb-ac-03",
+          "ch-09",
+          "kb-em-02",
+          "kb-rd-05"
+        ],
+        "expectedInTop5": 0,
+        "topScore": 0.524415113933885
+      },
+      {
+        "id": "q25",
+        "type": "sem_resposta",
+        "category": "estacao",
+        "group": "validacao",
+        "expected": [],
+        "position": null,
+        "top5": [
+          "ch-04",
+          "kb-im-05",
+          "kb-vpn-03",
+          "kb-vpn-01",
+          "kb-vpn-05"
+        ],
+        "expectedInTop5": 0,
+        "topScore": 0.46420011564495156
+      },
+      {
+        "id": "q26",
+        "type": "sem_resposta",
+        "category": "impressora",
+        "group": "validacao",
+        "expected": [],
+        "position": null,
+        "top5": [
+          "kb-ac-03",
+          "kb-im-03",
+          "kb-es-05",
+          "kb-im-01",
+          "kb-im-04"
+        ],
+        "expectedInTop5": 0,
+        "topScore": 0.4805409455460765
+      },
+      {
+        "id": "q27",
+        "type": "sem_resposta",
+        "category": "estacao",
+        "group": "validacao",
+        "expected": [],
+        "position": null,
+        "top5": [
+          "ch-01",
+          "kb-ac-04",
+          "kb-es-02",
+          "kb-ac-05",
+          "kb-ac-01"
+        ],
+        "expectedInTop5": 0,
+        "topScore": 0.518807378028527
+      },
+      {
+        "id": "q28",
+        "type": "sem_resposta",
+        "category": "acesso",
+        "group": "validacao",
+        "expected": [],
+        "position": null,
+        "top5": [
+          "kb-es-03",
+          "kb-ac-03",
+          "kb-em-05",
+          "kb-es-05",
+          "kb-vpn-04"
+        ],
+        "expectedInTop5": 0,
+        "topScore": 0.5603148793424458
+      },
+      {
+        "id": "q29",
+        "type": "injection",
+        "category": "acesso",
+        "group": null,
+        "expected": [
+          "kb-ac-02"
+        ],
+        "position": 1,
+        "top5": [
+          "kb-ac-02",
+          "kb-ac-05",
+          "kb-ac-01",
+          "kb-vpn-02",
+          "kb-vpn-01"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.7232965217906758
+      },
+      {
+        "id": "q30",
+        "type": "injection",
+        "category": "email",
+        "group": null,
+        "expected": [
+          "ch-08"
+        ],
+        "position": 1,
+        "top5": [
+          "ch-08",
+          "kb-em-05",
+          "kb-ac-04",
+          "ch-01",
+          "kb-em-01"
+        ],
+        "expectedInTop5": 1,
+        "topScore": 0.7474220479582965
+      }
+    ]
+  }
+}
