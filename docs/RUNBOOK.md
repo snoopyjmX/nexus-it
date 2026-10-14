@@ -61,4 +61,6 @@ Roteiro, **não executado** contra um vazamento real. Ordem importa: revogar ant
 
 Prova automatizada: `apps/api/test/diagnosis.test.ts`, caso "modelo fora do ar: o diagnóstico determinístico segue inteiro, sem resumo" (resposta 201, fontes e passos presentes, `llm: "unavailable"`, execução gravada com `llm_outcome: provider_error`).
 
-Para ver na prática (não executado nesta data, para não parar o Ollama do autor): suba a API com `LLM_ENABLED=true` e `OLLAMA_BASE_URL=http://127.0.0.1:9` (porta fechada), abra um chamado como técnico e peça o diagnóstico. Passa quando o painel mostra fontes e passos e o aviso "O resumo por modelo não está disponível agora; o diagnóstico abaixo não depende dele.", e chamados, base e busca seguem funcionando.
+Execução automatizada (2026-10-13): o e2e (`apps/e2e`) sobe a API com `LLM_ENABLED=true` e `OLLAMA_BASE_URL=http://127.0.0.1:9` (porta fechada, conexão recusada na hora), e `tests/llm-fora-do-ar.spec.ts` confere o painel; o resto do e2e roda nessa mesma configuração. Isso prova a recusa de conexão. **Não prova** timeout, resposta lenta nem erro 5xx do modelo (esses casos estão em `diagnosis.test.ts`) e não foi feito com o Ollama real parado.
+
+Para ver à mão com a mesma porta fechada: suba a API com `LLM_ENABLED=true` e `OLLAMA_BASE_URL=http://127.0.0.1:9`, abra um chamado como técnico e peça o diagnóstico. Para testar com o Ollama de verdade parado (não feito, para não derrubar o do autor), encerre o aplicativo Ollama e repita com o `OLLAMA_BASE_URL` padrão.

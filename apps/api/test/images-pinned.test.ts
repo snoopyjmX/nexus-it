@@ -18,9 +18,14 @@ describe("imagens fixadas por digest (T-10)", () => {
   });
 
   // O Dependabot não varre o `services.image` do ci.yml: sem esta checagem, o CI poderia testar outro pgvector.
-  it("o Postgres do CI é exatamente o do compose", () => {
-    const image = (path: string) => /^[ \t]*image:[ \t]*(\S+)/m.exec(read(path))?.[1];
-    expect(image(".github/workflows/ci.yml")).toBe(image("docker-compose.yml"));
+  // Vale para todo job do ci.yml que sobe o Postgres, não só para o primeiro.
+  it("todo Postgres do CI é exatamente o do compose", () => {
+    const images = (path: string) => [...read(path).matchAll(/^[ \t]*image:[ \t]*(\S+)/gm)].map((match) => match[1]);
+    const compose = images("docker-compose.yml");
+    expect(compose).toHaveLength(1);
+    const ci = images(".github/workflows/ci.yml");
+    expect(ci.length).toBeGreaterThan(1);
+    for (const image of ci) expect(image).toBe(compose[0]);
   });
 
   // O Trivy config só entende o Dockerfile (compose e workflows não são configuração que ele reconheça): os

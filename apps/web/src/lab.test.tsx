@@ -172,6 +172,18 @@ describe("laboratório: detalhe da execução", () => {
     expect(within(await screen.findByRole("table", { name: "Por tipo de consulta" })).getByRole("row", { name: /ambigua/ })).toBeTruthy();
   });
 
+  it("tabela larga rola dentro de uma região que o teclado alcança, não a página inteira (WCAG 1.4.10, 2.1.1)", async () => {
+    await open([run()]);
+    const table = await screen.findByRole("table", { name: "Execuções" });
+    const region = table.closest("[role=region]");
+    expect(region?.getAttribute("tabindex")).toBe("0");
+    expect(region?.getAttribute("aria-label")).toContain("Execuções");
+    // As tabelas do detalhe seguem a mesma regra.
+    for (const name of ["Por tipo de consulta", "Por categoria"]) {
+      expect(screen.getByRole("table", { name }).closest("[role=region]")?.getAttribute("tabindex"), name).toBe("0");
+    }
+  });
+
   it("ver detalhes da execução selecionada mantém o foco do teclado no botão (NFR-06)", async () => {
     await open([run()]);
     const user = userEvent.setup();

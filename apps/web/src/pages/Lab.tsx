@@ -1,14 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Navigate } from "react-router";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { formatDate } from "../labels";
 import { download, exportName, toCsv } from "../lab-export";
 import type { EvalCounts, EvalGeneration, EvalRun, EvalThreshold } from "../types";
-import { Badge, Button, ErrorMessage, Loading } from "../ui";
+import { Badge, Button, ErrorMessage, Loading, focusRing } from "../ui";
 
 const number = (value: number, digits: number) => value.toLocaleString("pt-BR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+// Tabela larga rola dentro do próprio contêiner, não a página inteira (WCAG 1.4.10); o contêiner recebe foco para o
+// teclado conseguir rolar (WCAG 2.1.1). `relative`: o texto sr-only é absoluto e, sem um ancestral posicionado, escapa do
+// recorte e alarga a página.
+function Scroll({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div role="region" aria-label={`${label} (rolagem horizontal)`} tabIndex={0} className={`relative overflow-x-auto ${focusRing}`}>
+      {children}
+    </div>
+  );
+}
 
 // O resultado vem de JSON gravado pelo runner. Uma linha que não tenha a forma esperada é mostrada como ilegível
 // em vez de derrubar a tela.
@@ -19,7 +30,7 @@ function readable(run: EvalRun): boolean {
 
 function CountsTable({ label, groups }: { label: string; groups: Record<string, EvalCounts> }) {
   return (
-    <table aria-label={label} className="w-full border-collapse text-left">
+    <Scroll label={label}><table aria-label={label} className="w-full border-collapse text-left">
       <thead>
         <tr className="border-b border-slate-400">
           <th scope="col" className="py-1 pr-4">Grupo</th>
@@ -38,7 +49,7 @@ function CountsTable({ label, groups }: { label: string; groups: Record<string, 
           </tr>
         ))}
       </tbody>
-    </table>
+    </table></Scroll>
   );
 }
 
@@ -66,7 +77,7 @@ function GenerationSection({ g }: { g: EvalGeneration }) {
   return (
     <section aria-labelledby="lab-geracao">
       <h3 id="lab-geracao" className="mb-1 font-semibold">Geração (resumo do modelo)</h3>
-      <dl className="mb-2 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1">
+      <dl className="mb-2 grid grid-cols-1 gap-y-1 break-words sm:grid-cols-[max-content_1fr] sm:gap-x-4">
         <dt>Modelo</dt><dd className="font-mono">{g.model}</dd>
         <dt>Prompt</dt><dd className="font-mono">{g.promptVersion}</dd>
         <dt>Casos (versão)</dt><dd className="font-mono">{g.casesVersion}</dd>
@@ -93,7 +104,7 @@ function GenerationSection({ g }: { g: EvalGeneration }) {
       <p role="note" className="mt-2 rounded border border-amber-700 bg-amber-50 px-3 py-2 text-amber-900">{g.humanReview}</p>
       <details className="mt-2">
         <summary className="cursor-pointer font-semibold">Resumos gerados, caso a caso</summary>
-        <table aria-label="Casos de geração" className="mt-2 w-full border-collapse text-left text-sm">
+        <Scroll label="Casos de geração"><table aria-label="Casos de geração" className="mt-2 w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-slate-400">
               <th scope="col" className="py-1 pr-3">Caso</th>
@@ -124,7 +135,7 @@ function GenerationSection({ g }: { g: EvalGeneration }) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></Scroll>
       </details>
     </section>
   );
@@ -153,7 +164,7 @@ function Detail({ run }: { run: EvalRun }) {
 
       <section aria-labelledby="lab-ambiente">
         <h3 id="lab-ambiente" className="mb-1 font-semibold">Ambiente</h3>
-        <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1">
+        <dl className="grid grid-cols-1 gap-y-1 break-words sm:grid-cols-[max-content_1fr] sm:gap-x-4">
           <dt>Data</dt><dd>{formatDate(environment.date)}</dd>
           <dt>Commit</dt><dd className="font-mono">{environment.commit}</dd>
           <dt>Processador</dt><dd>{environment.cpu}</dd>
@@ -188,7 +199,7 @@ function Detail({ run }: { run: EvalRun }) {
 
       <details>
         <summary className="cursor-pointer font-semibold">Consultas uma a uma</summary>
-        <table aria-label="Consultas" className="mt-2 w-full border-collapse text-left text-sm">
+        <Scroll label="Consultas"><table aria-label="Consultas" className="mt-2 w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-slate-400">
               <th scope="col" className="py-1 pr-3">Consulta</th>
@@ -209,7 +220,7 @@ function Detail({ run }: { run: EvalRun }) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></Scroll>
       </details>
     </div>
   );
@@ -240,7 +251,7 @@ export function Lab() {
         </p>
       )}
       {items.length > 0 && (
-        <table aria-label="Execuções" className="w-full border-collapse text-left">
+        <Scroll label="Execuções"><table aria-label="Execuções" className="w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-slate-400">
               <th scope="col" className="py-1 pr-4">Data</th>
@@ -274,7 +285,7 @@ export function Lab() {
               ),
             )}
           </tbody>
-        </table>
+        </table></Scroll>
       )}
       {selected && <Detail run={selected} />}
     </div>

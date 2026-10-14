@@ -16,16 +16,18 @@ export default defineConfig({
     ? [{ name: "chromium", testMatch: /record\.spec\.ts/, use: { ...devices["Desktop Chrome"] } }]
     : [
         { name: "setup", testMatch: /auth\.setup\.ts/ },
-        { name: "chromium", testIgnore: [/auth\.setup\.ts/, /demo\.spec\.ts/], use: { ...devices["Desktop Chrome"] }, dependencies: ["setup"] },
+        { name: "chromium", testIgnore: [/auth\.setup\.ts/, /[\\/]demo(-a11y)?\.spec\.ts$/], use: { ...devices["Desktop Chrome"] }, dependencies: ["setup"] },
         // A demonstração estática não usa API nem login: build de demo servido como arquivos (ADR-003).
-        { name: "demo", testMatch: /demo\.spec\.ts/, use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${DEMO_PORT}` } },
+        { name: "demo", testMatch: /[\\/]demo(-a11y)?\.spec\.ts$/, use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${DEMO_PORT}` } },
       ],
   webServer: [
     {
       name: "API",
       command: `pnpm exec tsx ${record ? "prepare-demo-db.ts" : "prepare-db.ts"} && pnpm exec tsx ../api/src/server.ts`,
       url: `http://127.0.0.1:${API_PORT}/api/v1/health/live`,
-      env: { PORT: String(API_PORT), NODE_ENV: "test", LOG_LEVEL: "warn" },
+      // No e2e o modelo de linguagem está ligado mas fora do ar (porta fechada): chamados, base e o painel determinístico têm
+      // de funcionar assim (T-12, FR-13). A gravação da demo exige o modelo desligado (explícito, para não herdar do shell), para não gravar texto de modelo.
+      env: { PORT: String(API_PORT), NODE_ENV: "test", LOG_LEVEL: "warn", ...(record ? { LLM_ENABLED: "false", EMBEDDINGS_ENABLED: "false" } : { LLM_ENABLED: "true", OLLAMA_BASE_URL: "http://127.0.0.1:9" }) },
       reuseExistingServer: false,
       timeout: 120_000,
     },
