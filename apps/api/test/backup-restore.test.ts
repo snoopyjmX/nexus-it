@@ -76,7 +76,8 @@ describe.skipIf(!composeUp)("backup e restore (T-14)", () => {
     expect(() => sh("restore.sh", dump, "x; DROP DATABASE nexus")).toThrow(/inválido/);
   });
 
-  it("dump corrompido: o restore falha e não deixa banco criado", () => {
+  // Cada chamada ao compose leva ~1 s; o padrão do Vitest (5 s) é menor que este teste.
+  it("dump corrompido: o restore falha e não deixa banco criado", { timeout: 60_000 }, () => {
     const broken = join(mkdtempSync(join(tmpdir(), "nexus-dump-")), "quebrado.dump");
     writeFileSync(broken, "isto não é um dump do pg_dump");
     try {
